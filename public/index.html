@@ -365,7 +365,7 @@ const StyleModal = ({ onClose, onSave }) => {
 };
 
 // ── Create Screen ──────────────────────────────────────────────────────────
-const CreateScreen = ({ onEpReady, onNav }) => {
+const CreateScreen = ({ onEpReady, onNav, user }) => {
   const [step, setStep] = useState(0);
   const [name, setName] = useState("");
   const [type, setType] = useState("");
@@ -375,6 +375,14 @@ const CreateScreen = ({ onEpReady, onNav }) => {
   const [hostCount, setHostCount] = useState(2);
   const [script, setScript] = useState("");
   const [busy, setBusy] = useState(false);
+ const [usage, setUsage] = useState(null);
+
+useEffect(() => {
+  if (!user) return;
+  resetUsageIfNewMonth(user.id).then(() => {
+    getUsage(user.id).then(setUsage);
+  });
+}, [user]);
 
   const cfg = type ? TYPES[type] : { color: T.acc };
 
@@ -391,12 +399,18 @@ const CreateScreen = ({ onEpReady, onNav }) => {
   };
 
   const generate = async () => {
+    if (usage && usage.plan === "free" && usage.episodes_used >= PLANS.free) {
+      setScript("وصلت للحد المجاني (3 حلقات/شهر). يرجى الترقية للباقة المدفوعة.");
+      return;
+    }
     setBusy(true); setScript("");
     try {
       const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt());
       setScript(text);
       const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: text, createdAt: new Date().toISOString() };
       sEp(ep); onEpReady(ep);
+     await incrementUsage(user.id);
+setUsage(u => u ? { ...u, episodes_used: (u.episodes_used || 0) + 1 } : u);
     } catch (e) { setScript("خطأ: " + e.message); }
     setBusy(false);
   };
