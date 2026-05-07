@@ -551,7 +551,7 @@ const CreateScreen = ({ onEpReady, onNav, user }) => {
               background:T.sur, border:`1px solid ${T.brd}`, fontSize:"12px", color:T.tx2,
               display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <span>الاستخدام هذا الشهر:</span>
-              <span style={{ color:usage.episodes_used>=(PLANS[usage.plan||"free"])?="#e07060":T.acc, fontWeight:"700" }}>
+              <span style={{ color:usage.episodes_used>=(PLANS[usage.plan||"free"])?"#e07060":T.acc, fontWeight:"700" }}>
                 {usage.episodes_used} / {PLANS[usage.plan||"free"] === Infinity ? "∞" : PLANS[usage.plan||"free"]} حلقة
               </span>
             </div>
