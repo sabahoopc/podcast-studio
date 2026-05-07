@@ -49,7 +49,7 @@ const sEp    = ep => {
   localStorage.setItem(EK, JSON.stringify(eps));
 };
 
-const callAI = async (system, msg, max = 3500) => {
+const callAI = async (system, msg, max = 8000) => {
   const r = await fetch(WORKER, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
