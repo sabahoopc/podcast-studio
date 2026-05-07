@@ -576,7 +576,20 @@ const CreateScreen = ({ onEpReady, onNav, user }) => {
               <div style={{ color:T.tx2, fontSize:"12px", marginTop:"8px" }}>يتم التوليد على جزأين للحصول على سكريبت أطول...</div>
             </Card>
           )}
-
+{script === "UPGRADE" && (
+  <div style={{ textAlign:"center", padding:"32px 24px", background:T.car, border:`1px solid ${T.brd}`, borderRadius:"12px", marginBottom:"16px" }}>
+    <div style={{ fontSize:"28px", marginBottom:"12px" }}>✦</div>
+    <div style={{ fontSize:"16px", fontWeight:"700", color:T.tx, marginBottom:"8px" }}>وصلت للحد المجاني</div>
+    <div style={{ color:T.tx2, fontSize:"13px", marginBottom:"24px" }}>
+      الباقة المجانية تتيح حلقة واحدة شهرياً.<br/>
+      الباقة المدفوعة تتيح 4 حلقات شهرياً بـ 39 ريال.
+    </div>
+    <a href="https://podcaststudio.gumroad.com/l/pro" target="_blank" style={{
+      display:"inline-block", background:T.acc, color:"#0d0d14", fontWeight:"700",
+      fontSize:"14px", padding:"12px 28px", borderRadius:"8px", textDecoration:"none",
+    }}>ترقية للباقة المدفوعة ←</a>
+  </div>
+)}
           {script && !busy && (
             <div>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
