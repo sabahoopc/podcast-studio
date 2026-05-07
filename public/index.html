@@ -916,6 +916,9 @@ const App = () => {
             </div>
             <div style={{ fontSize: "22px", fontWeight: "700", color: T.tx, marginBottom: "2px" }}>استوديو البودكاست</div>
             <div style={{ color: T.tx2, fontSize: "12px" }}>من الفكرة إلى النشر</div>
+<div style={{ marginTop: "6px", fontSize: "11px", color: T.tx3 }}>
+  {user?.email}
+</div>
           </div>
           <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
             <button onClick={() => setShowStyle(true)} style={{
@@ -954,7 +957,7 @@ const App = () => {
       <div style={{ width: "100%", maxWidth: "620px" }}>
         <div style={{ background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "16px", padding: "24px" }}>
           <Nav active={tab} onChange={setTab} />
-          {tab === "create"     && <CreateScreen onEpReady={setEpisode} onNav={setTab} />}
+          {tab === "create"     && <CreateScreen onEpReady={setEpisode} onNav={setTab} user={user} />}
           {tab === "production" && <ProductionScreen episode={episode} onNav={setTab} />}
           {tab === "marketing"  && <MarketingScreen episode={episode} onNav={setTab} />}
           {tab === "episodes"   && <EpisodesScreen onLoad={handleLoad} />}
