@@ -26,44 +26,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script type="text/babel">
-const { useState, useEffect, useCallback, useRef } = React;
+const { useState, useEffect } = React;
 
 // ── Supabase ───────────────────────────────────────────────────────────────
 const SUPABASE_URL = "https://qawyirrrprjcklwxgzqu.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
- // ── Usage ──────────────────────────────────────────────────────────────────
-const PLANS = { free: 1, pro: 4 };
-
-const getUsage = async (userId) => {
-  const { data } = await sb.from("usage").select("*").eq("user_id", userId).single();
-  if (!data) {
-    await sb.from("usage").insert({ user_id: userId });
-    return { episodes_used: 0, plan: "free" };
-  }
-  return data;
-};
-
-const incrementUsage = async (userId) => {
-  const { data } = await sb.from("usage").select("episodes_used").eq("user_id", userId).single();
-  const current = data?.episodes_used || 0;
-  await sb.from("usage").update({ episodes_used: current + 1, updated_at: new Date().toISOString() }).eq("user_id", userId);
-};
-
-const resetUsageIfNewMonth = async (userId) => {
-  const { data } = await sb.from("usage").select("updated_at, episodes_used").eq("user_id", userId).single();
-  if (!data) return;
-  const lastUpdate = new Date(data.updated_at);
-  const now = new Date();
-  if (lastUpdate.getMonth() !== now.getMonth() || lastUpdate.getFullYear() !== now.getFullYear()) {
-    await sb.from("usage").update({ episodes_used: 0, updated_at: now.toISOString() }).eq("user_id", userId);
-  }
-};
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const WORKER = "https://podcast-api.sabahoo-pc.workers.dev/";
 const SK = "ps_style_v7";
 const EK = "ps_eps_v7";
+const PLANS = { free: 1, pro: 4 };
 
 const TYPES = {
   solo:      { label: "فردي",   icon: "◎", desc: "مذيع واحد يقدم المحتوى", color: "#3d9e8f" },
@@ -82,11 +56,11 @@ const sEp    = ep => {
   localStorage.setItem(EK, JSON.stringify(eps));
 };
 
-const callAI = async (system, msg, max = 3500) => {
+const callAI = async (system, msg, max = 3000) => {
   const r = await fetch(WORKER, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: max, system, messages: [{ role: "user", content: msg }] }),
+    body: JSON.stringify({ model: "claude-sonnet-4-5-20250929", max_tokens: max, system, messages: [{ role: "user", content: msg }] }),
   });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e?.error?.message || "HTTP " + r.status); }
   const j = await r.json();
@@ -101,146 +75,128 @@ const styleBlock = () => {
   return lines.length ? "\n\n--- أسلوب المذيع (التزم به) ---\n" + lines.join("\n") + "\n--------------------------------" : "";
 };
 
+// ── Usage ──────────────────────────────────────────────────────────────────
+const getUsage = async (userId) => {
+  const { data } = await sb.from("usage").select("*").eq("user_id", userId).single();
+  if (!data) {
+    await sb.from("usage").insert({ user_id: userId });
+    return { episodes_used: 0, plan: "free" };
+  }
+  return data;
+};
+
+const incrementUsage = async (userId) => {
+  const { data } = await sb.from("usage").select("episodes_used").eq("user_id", userId).single();
+  const current = data?.episodes_used || 0;
+  await sb.from("usage").update({ episodes_used: current + 1, updated_at: new Date().toISOString() }).eq("user_id", userId);
+};
+
+const resetUsageIfNewMonth = async (userId) => {
+  const { data } = await sb.from("usage").select("updated_at").eq("user_id", userId).single();
+  if (!data) return;
+  const lastUpdate = new Date(data.updated_at);
+  const now = new Date();
+  if (lastUpdate.getMonth() !== now.getMonth() || lastUpdate.getFullYear() !== now.getFullYear()) {
+    await sb.from("usage").update({ episodes_used: 0, updated_at: now.toISOString() }).eq("user_id", userId);
+  }
+};
+
 // ── Design Tokens ──────────────────────────────────────────────────────────
 const T = {
-  bg:     "#0d0d14",
-  sur:    "#13131e",
-  car:    "#1a1a28",
-  brd:    "#252535",
-  brd2:   "#2e2e42",
-  acc:    "#c8a050",
-  accL:   "rgba(200,160,80,0.12)",
-  tx:     "#e2ddd4",
-  tx2:    "#8a8599",
-  tx3:    "#4a4860",
-  ok:     "#3d9e6f",
+  bg:"#0d0d14", sur:"#13131e", car:"#1a1a28", brd:"#252535", brd2:"#2e2e42",
+  acc:"#c8a050", accL:"rgba(200,160,80,0.12)", tx:"#e2ddd4", tx2:"#8a8599", tx3:"#4a4860",
+  ok:"#3d9e6f",
 };
 
 // ── Base Components ────────────────────────────────────────────────────────
-const css = obj => obj;
-
 const inputStyle = {
-  width: "100%", background: T.bg, border: `1px solid ${T.brd}`,
-  borderRadius: "8px", padding: "12px 14px", color: T.tx,
-  fontFamily: "'Noto Kufi Arabic', sans-serif", fontSize: "14px",
-  direction: "rtl", lineHeight: "1.8", outline: "none",
-  transition: "border-color 0.2s",
+  width:"100%", background:T.bg, border:`1px solid ${T.brd}`, borderRadius:"8px",
+  padding:"12px 14px", color:T.tx, fontFamily:"'Noto Kufi Arabic',sans-serif",
+  fontSize:"14px", direction:"rtl", lineHeight:"1.8", outline:"none", transition:"border-color 0.2s",
 };
 
 const Field = ({ label, children }) => (
-  <div style={{ marginBottom: "18px" }}>
-    <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: T.tx2, textTransform: "uppercase", marginBottom: "8px" }}>{label}</div>
+  <div style={{ marginBottom:"18px" }}>
+    <div style={{ fontSize:"11px", letterSpacing:"0.12em", color:T.tx2, textTransform:"uppercase", marginBottom:"8px" }}>{label}</div>
     {children}
   </div>
 );
 
-const Input = ({ value, onChange, placeholder, style: extra = {} }) => (
-  <input
-    value={value}
-    onChange={e => onChange(e.target.value)}
-    placeholder={placeholder}
+const Input = ({ value, onChange, placeholder, type="text", style:extra={} }) => (
+  <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
     style={{ ...inputStyle, ...extra }}
     onFocus={e => e.target.style.borderColor = T.acc}
-    onBlur={e => e.target.style.borderColor = T.brd}
-  />
+    onBlur={e => e.target.style.borderColor = T.brd} />
 );
 
-const Textarea = ({ value, onChange, placeholder, rows = 4 }) => (
-  <textarea
-    value={value}
-    onChange={e => onChange(e.target.value)}
-    placeholder={placeholder}
-    rows={rows}
-    style={{ ...inputStyle, resize: "vertical" }}
+const Textarea = ({ value, onChange, placeholder, rows=4 }) => (
+  <textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} rows={rows}
+    style={{ ...inputStyle, resize:"vertical" }}
     onFocus={e => e.target.style.borderColor = T.acc}
-    onBlur={e => e.target.style.borderColor = T.brd}
-  />
+    onBlur={e => e.target.style.borderColor = T.brd} />
 );
 
 const Select = ({ value, onChange, options, placeholder }) => (
-  <select
-    value={value}
-    onChange={e => onChange(e.target.value)}
-    style={{ ...inputStyle, cursor: "pointer", appearance: "none", color: value ? T.tx : T.tx2 }}
+  <select value={value} onChange={e => onChange(e.target.value)}
+    style={{ ...inputStyle, cursor:"pointer", appearance:"none", color:value?T.tx:T.tx2 }}
     onFocus={e => e.target.style.borderColor = T.acc}
-    onBlur={e => e.target.style.borderColor = T.brd}
-  >
+    onBlur={e => e.target.style.borderColor = T.brd}>
     <option value="" disabled>{placeholder}</option>
     {options.map(o => <option key={o} value={o}>{o}</option>)}
   </select>
 );
 
-const Btn = ({ children, onClick, disabled, variant = "ghost", color, full, small }) => {
-  const variants = {
-    fill:    { background: color || T.acc, border: "none", color: "#0d0d14" },
-    outline: { background: "transparent", border: `1px solid ${T.brd2}`, color: T.tx2 },
-    ghost:   { background: T.car, border: `1px solid ${T.brd}`, color: T.tx2 },
-  };
-  const v = variants[variant] || variants.ghost;
+const Btn = ({ children, onClick, disabled, variant="ghost", color, full, small }) => {
+  const v = variant === "fill"
+    ? { background:color||T.acc, border:"none", color:"#0d0d14" }
+    : variant === "outline"
+    ? { background:"transparent", border:`1px solid ${T.brd2}`, color:T.tx2 }
+    : { background:T.car, border:`1px solid ${T.brd}`, color:T.tx2 };
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      style={{
-        ...v, borderRadius: "8px", fontFamily: "'Noto Kufi Arabic', sans-serif",
-        fontWeight: "700", fontSize: small ? "12px" : "14px",
-        padding: small ? "7px 16px" : "12px 24px",
-        cursor: disabled ? "not-allowed" : "pointer",
-        opacity: disabled ? 0.4 : 1, width: full ? "100%" : "auto",
-        transition: "opacity 0.15s",
-      }}
-    >{children}</button>
+    <button onClick={onClick} disabled={disabled} style={{
+      ...v, borderRadius:"8px", fontFamily:"'Noto Kufi Arabic',sans-serif",
+      fontWeight:"700", fontSize:small?"12px":"14px", padding:small?"7px 16px":"12px 24px",
+      cursor:disabled?"not-allowed":"pointer", opacity:disabled?0.4:1,
+      width:full?"100%":"auto", transition:"opacity 0.15s",
+    }}>{children}</button>
   );
 };
 
-const Card = ({ children, style = {}, highlight }) => (
-  <div style={{
-    background: T.car, border: `1px solid ${highlight || T.brd}`,
-    borderRadius: "12px", padding: "22px", ...style,
-  }}>{children}</div>
+const Card = ({ children, style={}, highlight }) => (
+  <div style={{ background:T.car, border:`1px solid ${highlight||T.brd}`, borderRadius:"12px", padding:"22px", ...style }}>
+    {children}
+  </div>
 );
 
 const Badge = ({ type }) => {
   const t = TYPES[type];
-  return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", gap: "4px",
-      background: t.color + "22", border: `1px solid ${t.color}60`,
-      borderRadius: "6px", padding: "3px 10px", color: t.color, fontSize: "12px", fontWeight: "700",
-    }}>{t.icon} {t.label}</span>
-  );
+  return <span style={{ display:"inline-flex", alignItems:"center", gap:"4px",
+    background:t.color+"22", border:`1px solid ${t.color}60`, borderRadius:"6px",
+    padding:"3px 10px", color:t.color, fontSize:"12px", fontWeight:"700" }}>{t.icon} {t.label}</span>;
 };
 
 const Spinner = ({ color }) => (
-  <div style={{ textAlign: "center", padding: "40px 0" }}>
-    <div style={{
-      width: "32px", height: "32px", border: `2px solid ${T.brd2}`,
-      borderTop: `2px solid ${color || T.acc}`, borderRadius: "50%",
-      animation: "spin 0.8s linear infinite", margin: "0 auto 14px",
-    }} />
-    <div style={{ color: T.tx2, fontSize: "13px" }}>جارٍ التوليد...</div>
+  <div style={{ textAlign:"center", padding:"40px 0" }}>
+    <div style={{ width:"32px", height:"32px", border:`2px solid ${T.brd2}`,
+      borderTop:`2px solid ${color||T.acc}`, borderRadius:"50%",
+      animation:"spin 0.8s linear infinite", margin:"0 auto 14px" }} />
+    <div style={{ color:T.tx2, fontSize:"13px" }}>جارٍ التوليد...</div>
   </div>
 );
 
 const Dots = ({ cur, tot }) => (
-  <div style={{ display: "flex", gap: "5px", justifyContent: "center", marginBottom: "32px" }}>
-    {Array.from({ length: tot }).map((_, i) => (
-      <div key={i} style={{
-        width: i === cur ? "24px" : "7px", height: "7px", borderRadius: "4px",
-        background: i === cur ? T.acc : i < cur ? T.acc + "60" : T.brd2,
-        transition: "all 0.3s",
-      }} />
+  <div style={{ display:"flex", gap:"5px", justifyContent:"center", marginBottom:"32px" }}>
+    {Array.from({ length:tot }).map((_,i) => (
+      <div key={i} style={{ width:i===cur?"24px":"7px", height:"7px", borderRadius:"4px",
+        background:i===cur?T.acc:i<cur?T.acc+"60":T.brd2, transition:"all 0.3s" }} />
     ))}
   </div>
 );
 
 const OutputBox = ({ text }) => (
-  <div style={{
-    background: T.bg, border: `1px solid ${T.brd}`, borderRadius: "10px",
-    padding: "18px", color: T.tx, fontSize: "13px", lineHeight: "2",
-    direction: "rtl", whiteSpace: "pre-wrap", maxHeight: "380px", overflowY: "auto",
-    fontFamily: "'Noto Kufi Arabic', sans-serif",
-  }}>{text}</div>
+  <div style={{ background:T.bg, border:`1px solid ${T.brd}`, borderRadius:"10px", padding:"18px",
+    color:T.tx, fontSize:"13px", lineHeight:"2", direction:"rtl", whiteSpace:"pre-wrap",
+    maxHeight:"420px", overflowY:"auto", fontFamily:"'Noto Kufi Arabic',sans-serif" }}>{text}</div>
 );
 
 const CopyBtn = ({ text }) => {
@@ -253,52 +209,147 @@ const CopyBtn = ({ text }) => {
   );
 };
 
-const NextBanner = ({ msg, sub, label, onClick, color = T.acc }) => (
-  <div style={{
-    marginTop: "16px", padding: "14px 18px", borderRadius: "10px",
-    background: color + "15", border: `1px solid ${color}40`,
-    display: "flex", alignItems: "center", justifyContent: "space-between",
-  }}>
+const NextBanner = ({ msg, sub, label, onClick, color=T.acc }) => (
+  <div style={{ marginTop:"16px", padding:"14px 18px", borderRadius:"10px",
+    background:color+"15", border:`1px solid ${color}40`,
+    display:"flex", alignItems:"center", justifyContent:"space-between" }}>
     <div>
-      <div style={{ color, fontWeight: "700", fontSize: "13px", marginBottom: "2px" }}>✓ {msg}</div>
-      <div style={{ color: T.tx2, fontSize: "11px" }}>{sub}</div>
+      <div style={{ color, fontWeight:"700", fontSize:"13px", marginBottom:"2px" }}>✓ {msg}</div>
+      <div style={{ color:T.tx2, fontSize:"11px" }}>{sub}</div>
     </div>
     <Btn variant="fill" small color={color} onClick={onClick}>{label} ←</Btn>
   </div>
 );
 
 // ── Nav ────────────────────────────────────────────────────────────────────
-const TABS = [{ id: "create", l: "إنشاء" }, { id: "production", l: "الإنتاج" }, { id: "marketing", l: "التسويق" }, { id: "episodes", l: "حلقاتي" }];
+const TABS = [{ id:"create",l:"إنشاء" },{ id:"production",l:"الإنتاج" },{ id:"marketing",l:"التسويق" },{ id:"episodes",l:"حلقاتي" }];
 
 const Nav = ({ active, onChange }) => (
-  <div style={{
-    display: "flex", gap: "3px", background: T.bg,
-    border: `1px solid ${T.brd}`, borderRadius: "10px", padding: "4px", marginBottom: "24px",
-  }}>
+  <div style={{ display:"flex", gap:"3px", background:T.bg, border:`1px solid ${T.brd}`, borderRadius:"10px", padding:"4px", marginBottom:"24px" }}>
     {TABS.map(t => (
       <button key={t.id} onClick={() => onChange(t.id)} style={{
-        flex: 1, background: active === t.id ? T.acc : "transparent",
-        border: "none", borderRadius: "7px", padding: "9px 4px",
-        color: active === t.id ? "#0d0d14" : T.tx2, fontFamily: "'Noto Kufi Arabic', sans-serif",
-        fontWeight: "700", fontSize: "12px", cursor: "pointer", transition: "all 0.2s",
+        flex:1, background:active===t.id?T.acc:"transparent", border:"none", borderRadius:"7px",
+        padding:"9px 4px", color:active===t.id?"#0d0d14":T.tx2,
+        fontFamily:"'Noto Kufi Arabic',sans-serif", fontWeight:"700", fontSize:"12px", cursor:"pointer", transition:"all 0.2s",
       }}>{t.l}</button>
     ))}
   </div>
 );
+
+// ── Auth Screen ────────────────────────────────────────────────────────────
+const AuthScreen = ({ onAuth }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("login");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState({ text:"", ok:false });
+
+  const handle = async () => {
+    if (!email.trim() || (!password.trim() && mode !== "reset")) return;
+    setBusy(true); setMsg({ text:"", ok:false });
+    try {
+      if (mode === "login") {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+        onAuth(data.user);
+      } else if (mode === "signup") {
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) throw new Error(error.message);
+        setMsg({ text:"تم إنشاء الحساب — تحقق من بريدك لتفعيل الحساب", ok:true });
+      } else {
+        const { error } = await sb.auth.resetPasswordForEmail(email);
+        if (error) throw new Error(error.message);
+        setMsg({ text:"تم إرسال رابط إعادة تعيين كلمة المرور لبريدك", ok:true });
+      }
+    } catch (e) {
+      const msgs = {
+        "Invalid login credentials": "البريد أو كلمة المرور غير صحيحة",
+        "User already registered": "هذا البريد مسجّل بالفعل — سجّل دخول",
+        "Password should be at least 6 characters": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+      };
+      setMsg({ text:msgs[e.message]||e.message, ok:false });
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", padding:"24px", background:T.bg }}>
+      <div style={{ width:"100%", maxWidth:"420px" }} className="fade-in">
+        <div style={{ textAlign:"center", marginBottom:"40px" }}>
+          <div style={{ display:"inline-flex", alignItems:"center", gap:"8px", background:T.sur, border:`1px solid ${T.brd}`, borderRadius:"100px", padding:"5px 16px", marginBottom:"16px" }}>
+            <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:T.acc, boxShadow:`0 0 8px ${T.acc}` }} />
+            <span style={{ color:T.tx2, fontSize:"11px", letterSpacing:"0.13em" }}>PODCAST STUDIO</span>
+          </div>
+          <div style={{ fontSize:"24px", fontWeight:"700", color:T.tx, marginBottom:"6px" }}>استوديو البودكاست</div>
+          <div style={{ color:T.tx2, fontSize:"13px" }}>من الفكرة إلى النشر</div>
+        </div>
+
+        <Card>
+          <div style={{ fontSize:"17px", fontWeight:"700", color:T.tx, marginBottom:"6px" }}>
+            {mode==="login"?"تسجيل الدخول":mode==="signup"?"إنشاء حساب جديد":"استعادة كلمة المرور"}
+          </div>
+          <div style={{ color:T.tx2, fontSize:"12px", marginBottom:"24px" }}>
+            {mode==="login"?"أدخل بياناتك للمتابعة":mode==="signup"?"أنشئ حسابك مجاناً":"سنرسل رابط الاستعادة لبريدك"}
+          </div>
+
+          <Field label="البريد الإلكتروني">
+            <Input value={email} onChange={setEmail} placeholder="example@email.com" style={{ direction:"ltr" }} />
+          </Field>
+
+          {mode !== "reset" && (
+            <Field label="كلمة المرور">
+              <Input type="password" value={password} onChange={setPassword} placeholder="••••••••" style={{ direction:"ltr" }} />
+            </Field>
+          )}
+
+          {msg.text && (
+            <div style={{ padding:"10px 14px", borderRadius:"8px", fontSize:"13px", marginBottom:"16px",
+              background:msg.ok?T.ok+"20":"#c05040"+"20",
+              border:`1px solid ${msg.ok?T.ok:"#c05040"}40`,
+              color:msg.ok?T.ok:"#e07060" }}>{msg.text}</div>
+          )}
+
+          <Btn variant="fill" full disabled={busy||!email.trim()||(mode!=="reset"&&!password.trim())} onClick={handle}>
+            {busy?"جارٍ المعالجة...":mode==="login"?"دخول":mode==="signup"?"إنشاء الحساب":"إرسال رابط الاستعادة"}
+          </Btn>
+
+          <div style={{ marginTop:"20px", borderTop:`1px solid ${T.brd}`, paddingTop:"18px", display:"flex", flexDirection:"column", gap:"10px" }}>
+            {mode==="login" && <>
+              <button onClick={() => { setMode("signup"); setMsg({ text:"", ok:false }); }}
+                style={{ background:"none", border:"none", color:T.acc, fontSize:"13px", cursor:"pointer" }}>
+                ليس لديك حساب؟ أنشئ حساباً جديداً
+              </button>
+              <button onClick={() => { setMode("reset"); setMsg({ text:"", ok:false }); }}
+                style={{ background:"none", border:"none", color:T.tx2, fontSize:"12px", cursor:"pointer" }}>
+                نسيت كلمة المرور؟
+              </button>
+            </>}
+            {mode !== "login" && (
+              <button onClick={() => { setMode("login"); setMsg({ text:"", ok:false }); }}
+                style={{ background:"none", border:"none", color:T.acc, fontSize:"13px", cursor:"pointer" }}>
+                لديك حساب بالفعل؟ سجّل دخول
+              </button>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
 
 // ── Style Modal ────────────────────────────────────────────────────────────
 const StyleModal = ({ onClose, onSave }) => {
   const [p, setP] = useState(() => gStyle());
   const [sample, setSample] = useState("");
   const [busy, setBusy] = useState(false);
-  const upd = (k, v) => setP(x => ({ ...x, [k]: v }));
+  const upd = (k, v) => setP(x => ({ ...x, [k]:v }));
 
   const analyze = async () => {
     if (!sample.trim() || busy) return;
     setBusy(true);
     try {
       const raw = await callAI("أنت محلل أسلوب. ردودك JSON فقط بدون أي نص إضافي.",
-        `حلّل هذا السكريبت وأجب بـ JSON:\n{"tone":"","opening":"","language":"","structure":"","closing":"","distinctive":""}\n\nالسكريبت: ${sample}`, 600);
+        `حلّل هذا السكريبت وأجب بـ JSON:\n{"tone":"","opening":"","language":"","structure":"","closing":"","distinctive":""}\n\nالسكريبت: ${sample}`, 800);
       const parsed = JSON.parse(raw.trim());
       setP(x => ({ ...x, ...parsed }));
     } catch {}
@@ -306,58 +357,49 @@ const StyleModal = ({ onClose, onSave }) => {
   };
 
   const save = () => {
-    localStorage.setItem(SK, JSON.stringify({ ...p, ts: Date.now() }));
-    onSave();
-    onClose();
+    localStorage.setItem(SK, JSON.stringify({ ...p, ts:Date.now() }));
+    onSave(); onClose();
   };
 
-  const FIELDS = [
-    { k: "tone", l: "النبرة العامة", ph: "دافئ، تحليلي، حماسي..." },
-    { k: "opening", l: "طريقة الافتتاح", ph: "سؤال تشويقي، قصة..." },
-    { k: "language", l: "نوع اللغة", ph: "فصحى / خليجية / مزيج..." },
-    { k: "closing", l: "طريقة الختام", ph: "سؤال للمتابعين، توصية..." },
-    { k: "distinctive", l: "بصمتك المميزة", ph: "ما يجعل أسلوبك مختلفاً..." },
-  ];
-
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", backdropFilter: "blur(4px)",
-      display: "flex", alignItems: "center", justifyContent: "center", zIndex: 9999, padding: "16px",
-    }}>
-      <div style={{
-        background: T.sur, border: `1px solid ${T.brd2}`, borderRadius: "16px",
-        width: "100%", maxWidth: "520px", maxHeight: "88vh", overflowY: "auto", padding: "28px",
-      }} className="fade-in">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9999, padding:"16px" }}>
+      <div style={{ background:T.sur, border:`1px solid ${T.brd2}`, borderRadius:"16px", width:"100%", maxWidth:"520px", maxHeight:"88vh", overflowY:"auto", padding:"28px" }} className="fade-in">
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"22px" }}>
           <div>
-            <div style={{ fontSize: "17px", fontWeight: "700", color: T.tx }}>✦ ملف أسلوبي</div>
-            <div style={{ color: T.tx2, fontSize: "12px", marginTop: "3px" }}>يُطبَّق تلقائياً في كل سكريبت</div>
+            <div style={{ fontSize:"17px", fontWeight:"700", color:T.tx }}>✦ ملف أسلوبي</div>
+            <div style={{ color:T.tx2, fontSize:"12px", marginTop:"3px" }}>يُطبَّق تلقائياً في كل سكريبت</div>
           </div>
-          <button onClick={onClose} style={{ background: "none", border: "none", color: T.tx2, fontSize: "20px", cursor: "pointer" }}>✕</button>
+          <button onClick={onClose} style={{ background:"none", border:"none", color:T.tx2, fontSize:"20px", cursor:"pointer" }}>✕</button>
         </div>
 
-        <Card style={{ marginBottom: "20px" }} highlight={T.acc + "50"}>
-          <div style={{ fontSize: "12px", color: T.acc, fontWeight: "700", marginBottom: "8px" }}>استخراج تلقائي من سكريبت سابق</div>
+        <Card style={{ marginBottom:"20px" }} highlight={T.acc+"50"}>
+          <div style={{ fontSize:"12px", color:T.acc, fontWeight:"700", marginBottom:"8px" }}>استخراج تلقائي من سكريبت سابق</div>
           <Textarea value={sample} onChange={setSample} placeholder="الصق مقطعاً من حلقة سابقة..." rows={3} />
-          <div style={{ marginTop: "10px" }}>
-            <Btn variant="fill" small disabled={!sample.trim() || busy} onClick={analyze}>{busy ? "جارٍ التحليل..." : "تحليل وملء تلقائي"}</Btn>
+          <div style={{ marginTop:"10px" }}>
+            <Btn variant="fill" small disabled={!sample.trim()||busy} onClick={analyze}>{busy?"جارٍ التحليل...":"تحليل وملء تلقائي"}</Btn>
           </div>
         </Card>
 
-        <div style={{ display: "grid", gap: "14px" }}>
-          {FIELDS.map(f => (
+        <div style={{ display:"grid", gap:"14px" }}>
+          {[
+            { k:"tone", l:"النبرة العامة", ph:"دافئ، تحليلي، حماسي..." },
+            { k:"opening", l:"طريقة الافتتاح", ph:"سؤال تشويقي، قصة..." },
+            { k:"language", l:"نوع اللغة", ph:"فصحى / خليجية / مزيج..." },
+            { k:"closing", l:"طريقة الختام", ph:"سؤال للمتابعين، توصية..." },
+            { k:"distinctive", l:"بصمتك المميزة", ph:"ما يجعل أسلوبك مختلفاً..." },
+          ].map(f => (
             <Field key={f.k} label={f.l}>
-              <Input value={p[f.k] || ""} onChange={v => upd(f.k, v)} placeholder={f.ph} />
+              <Input value={p[f.k]||""} onChange={v => upd(f.k, v)} placeholder={f.ph} />
             </Field>
           ))}
           <Field label="بناء المحتوى وتدفقه">
-            <Textarea value={p.structure || ""} onChange={v => upd("structure", v)} placeholder="كيف تنظم أفكارك داخل الحلقة..." rows={3} />
+            <Textarea value={p.structure||""} onChange={v => upd("structure", v)} placeholder="كيف تنظم أفكارك داخل الحلقة..." rows={3} />
           </Field>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: "22px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", marginTop:"22px" }}>
           <Btn variant="outline" onClick={onClose}>إلغاء</Btn>
-          <Btn variant="fill" disabled={!(p.tone || p.opening)} onClick={save}>حفظ الملف</Btn>
+          <Btn variant="fill" disabled={!(p.tone||p.opening)} onClick={save}>حفظ الملف</Btn>
         </div>
       </div>
     </div>
@@ -375,16 +417,16 @@ const CreateScreen = ({ onEpReady, onNav, user }) => {
   const [hostCount, setHostCount] = useState(2);
   const [script, setScript] = useState("");
   const [busy, setBusy] = useState(false);
- const [usage, setUsage] = useState(null);
+  const [usage, setUsage] = useState(null);
 
-useEffect(() => {
-  if (!user) return;
-  resetUsageIfNewMonth(user.id).then(() => {
-    getUsage(user.id).then(setUsage);
-  });
-}, [user]);
+  useEffect(() => {
+    if (!user) return;
+    resetUsageIfNewMonth(user.id).then(() => {
+      getUsage(user.id).then(setUsage);
+    });
+  }, [user]);
 
-  const cfg = type ? TYPES[type] : { color: T.acc };
+  const cfg = type ? TYPES[type] : { color:T.acc };
 
   const buildPrompt = () => {
     const h = `البودكاست: "${name}" | النوع: ${TYPES[type].label} | المدة: ${duration} | النشر: ${frequency}${styleBlock()}\n\n`;
@@ -392,25 +434,35 @@ useEffect(() => {
       return h + `الموضوع: ${topic}\n\nاكتب سكريبت كامل جاهز للتسجيل مباشرةً:\n١- مقدمة جذابة كاملة\n٢- عرض الموضوع بتفصيل مع انتقالات طبيعية\n٣- تعمق في كل نقطة مع أمثلة وقصص\n٤- خاتمة قوية مع call to action\nضع [توقف] عند الانتقالات. الطول يتناسب مع ${duration}.`;
     if (type === "group") {
       const n = hostCount || 2;
-      const names = ["م١","م٢","م٣","م٤","م٥"].slice(0, n).join("، ");
+      const names = ["م١","م٢","م٣","م٤","م٥"].slice(0,n).join("، ");
       return h + `الموضوع: ${topic}\nعدد المذيعين: ${n}\n\nاكتب سكريبت حوار جماعي كامل موزع على (${names}). كل جملة مكتوبة كاملاً. يشمل مقدمة وحوار متدفق مع نقاط توافق وخلاف وخاتمة. الطول يتناسب مع ${duration}.`;
     }
     return h + `الضيف/الموضوع: ${topic}\n\nاكتب قائمة أسئلة احترافية:\n١- ٣ أسئلة تمهيدية\n٢- ٦–٨ أسئلة جوهرية متدرجة\n٣- ٣ أسئلة استفزازية\n٤- سؤال ختامي مميز\nلكل سؤال: السؤال كاملاً + هدفه + أسئلة متابعة.`;
   };
 
   const generate = async () => {
-    if (usage && usage.plan === "free" && usage.episodes_used >= PLANS.free) {
-      setScript("وصلت للحد المجاني (3 حلقات/شهر). يرجى الترقية للباقة المدفوعة.");
+    const plan = usage?.plan || "free";
+    const limit = PLANS[plan] || PLANS.free;
+    if (usage && usage.episodes_used >= limit) {
+      setScript(plan === "free"
+        ? `وصلت للحد المجاني (${PLANS.free} حلقة/شهر). يرجى الترقية للباقة المدفوعة للحصول على ${PLANS.pro} حلقات/شهر.`
+        : `وصلت للحد الأقصى لباقتك (${PLANS.pro} حلقات/شهر).`);
       return;
     }
     setBusy(true); setScript("");
     try {
-      const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt());
-      setScript(text);
-      const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: text, createdAt: new Date().toISOString() };
+      const prompt1 = buildPrompt() + "\n\nمهم: اكتب الجزء الأول فقط — المقدمة وأول نصف الموضوع. توقف عند منتصف الحلقة تقريباً وضع في النهاية: [يتبع...]";
+      const part1 = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", prompt1);
+      const prompt2 = `هذا هو الجزء الأول من السكريبت:\n\n${part1}\n\nأكمل الجزء الثاني — النصف الثاني من الموضوع والخاتمة مع call to action. لا تعيد ما كتب في الجزء الأول.`;
+      const part2 = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", prompt2);
+      const fullScript = part1.replace("[يتبع...]", "").trim() + "\n\n" + part2;
+      setScript(fullScript);
+      const ep = { id:Date.now()+"", name, type, duration, frequency, topic, hostCount, script:fullScript, createdAt:new Date().toISOString() };
       sEp(ep); onEpReady(ep);
-     await incrementUsage(user.id);
-setUsage(u => u ? { ...u, episodes_used: (u.episodes_used || 0) + 1 } : u);
+      if (user) {
+        await incrementUsage(user.id);
+        setUsage(u => u ? { ...u, episodes_used:(u.episodes_used||0)+1 } : u);
+      }
     } catch (e) { setScript("خطأ: " + e.message); }
     setBusy(false);
   };
@@ -421,42 +473,41 @@ setUsage(u => u ? { ...u, episodes_used: (u.episodes_used || 0) + 1 } : u);
 
       {step === 0 && (
         <div>
-          <div style={{ marginBottom: "24px" }}>
-            <div style={{ fontSize: "18px", fontWeight: "700", color: T.tx, marginBottom: "4px" }}>◎ هوية البودكاست</div>
-            <div style={{ color: T.tx2, fontSize: "13px" }}>ابدأ بتحديد اسم البودكاست وطبيعته</div>
+          <div style={{ marginBottom:"24px" }}>
+            <div style={{ fontSize:"18px", fontWeight:"700", color:T.tx, marginBottom:"4px" }}>◎ هوية البودكاست</div>
+            <div style={{ color:T.tx2, fontSize:"13px" }}>ابدأ بتحديد اسم البودكاست وطبيعته</div>
           </div>
           <Field label="اسم البودكاست">
             <Input value={name} onChange={setName} placeholder="مثال: بودكاست مدى، صوت العقل..." />
           </Field>
-          <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: T.tx2, textTransform: "uppercase", marginBottom: "12px" }}>نوع البودكاست</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "28px" }}>
+          <div style={{ fontSize:"11px", letterSpacing:"0.12em", color:T.tx2, textTransform:"uppercase", marginBottom:"12px" }}>نوع البودكاست</div>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px", marginBottom:"28px" }}>
             {Object.entries(TYPES).map(([k, t]) => {
               const sel = type === k;
               return (
                 <div key={k} onClick={() => setType(k)} style={{
-                  border: `2px solid ${sel ? t.color : T.brd}`, borderRadius: "10px",
-                  padding: "16px 12px", cursor: "pointer", background: sel ? t.color + "12" : T.bg,
-                  transition: "all 0.2s", textAlign: "center",
+                  border:`2px solid ${sel?t.color:T.brd}`, borderRadius:"10px", padding:"16px 12px",
+                  cursor:"pointer", background:sel?t.color+"12":T.bg, transition:"all 0.2s", textAlign:"center",
                 }}>
-                  <div style={{ fontSize: "20px", marginBottom: "6px" }}>{t.icon}</div>
-                  <div style={{ fontWeight: "700", fontSize: "13px", color: sel ? t.color : T.tx, marginBottom: "3px" }}>{t.label}</div>
-                  <div style={{ fontSize: "11px", color: T.tx2, lineHeight: "1.5" }}>{t.desc}</div>
+                  <div style={{ fontSize:"20px", marginBottom:"6px" }}>{t.icon}</div>
+                  <div style={{ fontWeight:"700", fontSize:"13px", color:sel?t.color:T.tx, marginBottom:"3px" }}>{t.label}</div>
+                  <div style={{ fontSize:"11px", color:T.tx2, lineHeight:"1.5" }}>{t.desc}</div>
                 </div>
               );
             })}
           </div>
-          <div style={{ textAlign: "left" }}>
-            <Btn variant="fill" disabled={!name || !type} onClick={() => setStep(1)}>التالي ←</Btn>
+          <div style={{ textAlign:"left" }}>
+            <Btn variant="fill" disabled={!name||!type} onClick={() => setStep(1)}>التالي ←</Btn>
           </div>
         </div>
       )}
 
       {step === 1 && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "22px" }}>
-            <Badge type={type} /><span style={{ fontWeight: "700", color: T.tx }}>{name}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"22px" }}>
+            <Badge type={type} /><span style={{ fontWeight:"700", color:T.tx }}>{name}</span>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "4px" }}>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px" }}>
             <Field label="مدة الحلقة">
               <Select value={duration} onChange={setDuration} options={DURS} placeholder="اختر المدة" />
             </Field>
@@ -466,66 +517,81 @@ setUsage(u => u ? { ...u, episodes_used: (u.episodes_used || 0) + 1 } : u);
           </div>
           {type === "group" && (
             <Field label="عدد المذيعين">
-              <div style={{ display: "flex", gap: "8px" }}>
-                {[2, 3, 4, 5].map(n => (
+              <div style={{ display:"flex", gap:"8px" }}>
+                {[2,3,4,5].map(n => (
                   <div key={n} onClick={() => setHostCount(n)} style={{
-                    border: `2px solid ${hostCount === n ? cfg.color : T.brd}`, borderRadius: "8px",
-                    padding: "9px 16px", cursor: "pointer", fontWeight: "700",
-                    color: hostCount === n ? cfg.color : T.tx2,
-                    background: hostCount === n ? cfg.color + "15" : "transparent",
+                    border:`2px solid ${hostCount===n?cfg.color:T.brd}`, borderRadius:"8px", padding:"9px 16px",
+                    cursor:"pointer", fontWeight:"700", color:hostCount===n?cfg.color:T.tx2,
+                    background:hostCount===n?cfg.color+"15":"transparent",
                   }}>{n}</div>
                 ))}
               </div>
             </Field>
           )}
-          <Field label={type === "solo" ? "الموضوع أو الفكرة الكاملة" : type === "group" ? "موضوع النقاش وأبرز المحاور" : "موضوع الحلقة وتفاصيل الضيف"}>
+          <Field label={type==="solo"?"الموضوع أو الفكرة الكاملة":type==="group"?"موضوع النقاش وأبرز المحاور":"موضوع الحلقة وتفاصيل الضيف"}>
             <Textarea value={topic} onChange={setTopic} rows={5}
-              placeholder={type === "solo" ? "اكتب الفكرة بشكل موسع..." : type === "group" ? "ما الموضوع الذي ستناقشونه؟" : "من الضيف؟ وما المحور؟"} />
+              placeholder={type==="solo"?"اكتب الفكرة بشكل موسع...":type==="group"?"ما الموضوع الذي ستناقشونه؟":"من الضيف؟ وما المحور؟"} />
           </Field>
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
+          <div style={{ display:"flex", justifyContent:"space-between" }}>
             <Btn variant="outline" onClick={() => setStep(0)}>← رجوع</Btn>
-            <Btn variant="fill" disabled={!duration || !frequency || !topic} onClick={() => setStep(2)}>توليد السكريبت ←</Btn>
+            <Btn variant="fill" disabled={!duration||!frequency||!topic} onClick={() => setStep(2)}>توليد السكريبت ←</Btn>
           </div>
         </div>
       )}
 
       {step === 2 && (
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "5px" }}>
-            <Badge type={type} /><span style={{ fontWeight: "700", color: T.tx, fontSize: "15px" }}>{name}</span>
+          <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"5px" }}>
+            <Badge type={type} /><span style={{ fontWeight:"700", color:T.tx, fontSize:"15px" }}>{name}</span>
           </div>
-          <div style={{ color: T.tx2, fontSize: "12px", marginBottom: "20px" }}>{duration} · {frequency}</div>
+          <div style={{ color:T.tx2, fontSize:"12px", marginBottom:"6px" }}>{duration} · {frequency}</div>
+
+          {usage && (
+            <div style={{ marginBottom:"16px", padding:"8px 14px", borderRadius:"8px",
+              background:T.sur, border:`1px solid ${T.brd}`, fontSize:"12px", color:T.tx2,
+              display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span>الاستخدام هذا الشهر:</span>
+              <span style={{ color:usage.episodes_used>=(PLANS[usage.plan||"free"])?="#e07060":T.acc, fontWeight:"700" }}>
+                {usage.episodes_used} / {PLANS[usage.plan||"free"] === Infinity ? "∞" : PLANS[usage.plan||"free"]} حلقة
+              </span>
+            </div>
+          )}
 
           {!script && !busy && (
-            <Card style={{ textAlign: "center", padding: "44px 24px" }}>
-              <div style={{ fontSize: "36px", marginBottom: "12px" }}>{type === "solo" ? "✦" : type === "group" ? "⬡" : "◈"}</div>
-              <div style={{ fontWeight: "700", fontSize: "15px", color: T.tx, marginBottom: "6px" }}>
-                جاهز لتوليد {type === "solo" ? "السكريبت" : type === "group" ? "سكريبت الحوار" : "أسئلة الحلقة"}
+            <Card style={{ textAlign:"center", padding:"44px 24px" }}>
+              <div style={{ fontSize:"36px", marginBottom:"12px" }}>{type==="solo"?"✦":type==="group"?"⬡":"◈"}</div>
+              <div style={{ fontWeight:"700", fontSize:"15px", color:T.tx, marginBottom:"6px" }}>
+                جاهز لتوليد {type==="solo"?"السكريبت":type==="group"?"سكريبت الحوار":"أسئلة الحلقة"}
               </div>
-              <div style={{ color: T.tx2, fontSize: "12px", marginBottom: "24px" }}>
-                {Object.keys(gStyle()).length ? "سيتم الكتابة بأسلوبك الشخصي" : "سيتم التوليد بناءً على معلوماتك"}
+              <div style={{ color:T.tx2, fontSize:"12px", marginBottom:"24px" }}>
+                {Object.keys(gStyle()).length?"سيتم الكتابة بأسلوبك الشخصي":"سيتم التوليد بناءً على معلوماتك"}
               </div>
               <Btn variant="fill" color={cfg.color} onClick={generate}>توليد المحتوى</Btn>
             </Card>
           )}
 
-          {busy && <Spinner color={cfg.color} />}
+          {busy && (
+            <Card style={{ textAlign:"center", padding:"44px 24px" }}>
+              <Spinner color={cfg.color} />
+              <div style={{ color:T.tx2, fontSize:"12px", marginTop:"8px" }}>يتم التوليد على جزأين للحصول على سكريبت أطول...</div>
+            </Card>
+          )}
 
           {script && !busy && (
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: T.tx2, textTransform: "uppercase" }}>السكريبت المولّد</div>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+                <div style={{ fontSize:"11px", letterSpacing:"0.12em", color:T.tx2, textTransform:"uppercase" }}>السكريبت المولّد</div>
                 <CopyBtn text={script} />
               </div>
               <OutputBox text={script} />
-              <div style={{ display: "flex", gap: "8px", marginTop: "12px", justifyContent: "flex-end" }}>
+              <div style={{ display:"flex", gap:"8px", marginTop:"12px", justifyContent:"flex-end" }}>
                 <Btn variant="outline" small onClick={generate}>إعادة التوليد</Btn>
               </div>
               <NextBanner msg="السكريبت جاهز" sub="الخطوة التالية: نصائح الإنتاج" label="الإنتاج" onClick={() => onNav("production")} />
             </div>
           )}
 
-          <div style={{ display: "flex", justifyContent: "space-between", marginTop: "16px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", marginTop:"16px" }}>
             <Btn variant="outline" onClick={() => setStep(1)}>← رجوع</Btn>
             <Btn variant="outline" onClick={() => { setStep(0); setName(""); setType(""); setDuration(""); setFrequency(""); setTopic(""); setScript(""); }}>حلقة جديدة</Btn>
           </div>
@@ -547,8 +613,8 @@ const ProductionScreen = ({ episode, onNav }) => {
     const t = episode?.type || "solo";
     const isAudio = fmt === "audio";
     const prompt = isAudio
-      ? `البودكاست: ${episode?.name || "—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${episode?.topic || "—"}\n\nأعطِ نصائح مفصّلة للتسجيل الصوتي:\n\n🎙️ وضع الميكروفون: المسافة المثالية بالسنتيمترات والزاوية. الفرق بين الديناميكي والكوندنسر.\n\n📍 المكان والمعالجة الصوتية: خصائص الغرفة المثالية. طرق عزل الصوت منخفضة التكلفة. ما يجب تجنبه.\n\n🎚️ التحرير الصوتي: برامج موصى بها. إعدادات EQ والضغط. إزالة الضوضاء والصمت.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب لهذا البودكاست تحديداً. مواقع مجانية. توقيت الاستخدام.`
-      : `البودكاست: ${episode?.name || "—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${episode?.topic || "—"}\n\nأعطِ نصائح مفصّلة لتصوير هذا البودكاست (${t === "solo" ? "مذيع فردي" : t === "group" ? (episode?.hostCount || 2) + " مذيعين" : "مذيع وضيف"}):\n\n📷 الكاميرات: عدد الكاميرات وزوايا كل منها. المسافة البؤرية. إعدادات التعرض.\n\n💡 الإضاءة: مخطط Key/Fill/Back. درجات الحرارة بـ Kelvin. بدائل منخفضة التكلفة.\n\n🎨 الديكور والخلفية: اقتراحات تتناسب مع موضوع البودكاست. ما يجب تجنبه.\n\n✂️ المونتاج: برامج مقترحة. إعدادات التصدير لكل منصة.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب. توقيت استخدامها.`;
+      ? `البودكاست: ${episode?.name||"—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${episode?.topic||"—"}\n\nأعطِ نصائح مفصّلة للتسجيل الصوتي:\n\n🎙️ وضع الميكروفون: المسافة المثالية بالسنتيمترات والزاوية. الفرق بين الديناميكي والكوندنسر.\n\n📍 المكان والمعالجة الصوتية: خصائص الغرفة المثالية. طرق عزل الصوت منخفضة التكلفة.\n\n🎚️ التحرير الصوتي: برامج موصى بها. إعدادات EQ والضغط. إزالة الضوضاء.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب لهذا البودكاست تحديداً. مواقع مجانية. توقيت الاستخدام.`
+      : `البودكاست: ${episode?.name||"—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${episode?.topic||"—"}\n\nأعطِ نصائح مفصّلة لتصوير هذا البودكاست (${t==="solo"?"مذيع فردي":t==="group"?(episode?.hostCount||2)+" مذيعين":"مذيع وضيف"}):\n\n📷 الكاميرات: عدد الكاميرات وزوايا كل منها. المسافة البؤرية. إعدادات التعرض.\n\n💡 الإضاءة: مخطط Key/Fill/Back. درجات الحرارة بـ Kelvin. بدائل منخفضة التكلفة.\n\n🎨 الديكور والخلفية: اقتراحات تتناسب مع موضوع البودكاست.\n\n✂️ المونتاج: برامج مقترحة. إعدادات التصدير لكل منصة.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب. توقيت استخدامها.`;
     try {
       const text = await callAI("أنت خبير إنتاج بودكاست عربي. أجب بالعربية بشكل مفصّل وعملي.", prompt);
       setResult(text);
@@ -558,40 +624,33 @@ const ProductionScreen = ({ episode, onNav }) => {
 
   return (
     <div className="fade-in">
-      <div style={{ marginBottom: "22px" }}>
-        <div style={{ fontSize: "18px", fontWeight: "700", color: T.tx, marginBottom: "4px" }}>◉ نصائح الإنتاج</div>
-        <div style={{ color: T.tx2, fontSize: "13px" }}>اختر نوع الاستوديو للحصول على توصيات مخصصة</div>
+      <div style={{ marginBottom:"22px" }}>
+        <div style={{ fontSize:"18px", fontWeight:"700", color:T.tx, marginBottom:"4px" }}>◉ نصائح الإنتاج</div>
+        <div style={{ color:T.tx2, fontSize:"13px" }}>اختر نوع الاستوديو للحصول على توصيات مخصصة</div>
       </div>
-
-      {!episode && (
-        <Card style={{ textAlign: "center", padding: "36px", marginBottom: "16px" }}>
-          <div style={{ color: T.tx2, fontSize: "14px" }}>أنشئ حلقة أولاً من صفحة "إنشاء"</div>
-        </Card>
-      )}
-
-      <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: T.tx2, textTransform: "uppercase", marginBottom: "12px" }}>نوع الاستوديو</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "18px" }}>
-        {[{ id: "audio", ic: "🎙️", l: "صوتي فقط", d: "ميكروفون وتسجيل صوتي" },
-          { id: "video", ic: "🎥", l: "مصوَّر", d: "كاميرا وإضاءة ومونتاج" }].map(f => (
+      {!episode && <Card style={{ textAlign:"center", padding:"36px", marginBottom:"16px" }}>
+        <div style={{ color:T.tx2, fontSize:"14px" }}>أنشئ حلقة أولاً من صفحة "إنشاء"</div>
+      </Card>}
+      <div style={{ fontSize:"11px", letterSpacing:"0.12em", color:T.tx2, textTransform:"uppercase", marginBottom:"12px" }}>نوع الاستوديو</div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"18px" }}>
+        {[{ id:"audio",ic:"🎙️",l:"صوتي فقط",d:"ميكروفون وتسجيل صوتي" },
+          { id:"video",ic:"🎥",l:"مصوَّر",d:"كاميرا وإضاءة ومونتاج" }].map(f => (
           <div key={f.id} onClick={() => setFmt(f.id)} style={{
-            border: `2px solid ${fmt === f.id ? T.acc : T.brd}`, borderRadius: "10px", padding: "18px",
-            cursor: "pointer", background: fmt === f.id ? T.accL : T.bg, transition: "all 0.2s", textAlign: "center",
+            border:`2px solid ${fmt===f.id?T.acc:T.brd}`, borderRadius:"10px", padding:"18px",
+            cursor:"pointer", background:fmt===f.id?T.accL:T.bg, transition:"all 0.2s", textAlign:"center",
           }}>
-            <div style={{ fontSize: "26px", marginBottom: "8px" }}>{f.ic}</div>
-            <div style={{ fontWeight: "700", fontSize: "14px", marginBottom: "3px", color: fmt === f.id ? T.acc : T.tx }}>{f.l}</div>
-            <div style={{ fontSize: "12px", color: T.tx2 }}>{f.d}</div>
+            <div style={{ fontSize:"26px", marginBottom:"8px" }}>{f.ic}</div>
+            <div style={{ fontWeight:"700", fontSize:"14px", marginBottom:"3px", color:fmt===f.id?T.acc:T.tx }}>{f.l}</div>
+            <div style={{ fontSize:"12px", color:T.tx2 }}>{f.d}</div>
           </div>
         ))}
       </div>
-
-      <Btn variant="fill" full disabled={!fmt || busy} onClick={generate}>{busy ? "جارٍ التوليد..." : "توليد نصائح الإنتاج"}</Btn>
-
+      <Btn variant="fill" full disabled={!fmt||busy} onClick={generate}>{busy?"جارٍ التوليد...":"توليد نصائح الإنتاج"}</Btn>
       {busy && <Spinner />}
-
       {result && !busy && (
-        <div style={{ marginTop: "18px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-            <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: T.tx2, textTransform: "uppercase" }}>توصيات الإنتاج</div>
+        <div style={{ marginTop:"18px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+            <div style={{ fontSize:"11px", letterSpacing:"0.12em", color:T.tx2, textTransform:"uppercase" }}>توصيات الإنتاج</div>
             <CopyBtn text={result} />
           </div>
           <OutputBox text={result} />
@@ -610,90 +669,79 @@ const MarketingScreen = ({ episode, onNav }) => {
   const [busy, setBusy] = useState("");
   const [dlDone, setDlDone] = useState(false);
 
-  const MTABS = [{ id: "description", l: "وصف الحلقة" }, { id: "social", l: "السوشيال" }, { id: "email", l: "نشرة بريدية" }, { id: "titles", l: "عناوين بديلة" }];
+  const MTABS = [{ id:"description",l:"وصف الحلقة" },{ id:"social",l:"السوشيال" },{ id:"email",l:"نشرة بريدية" },{ id:"titles",l:"عناوين بديلة" }];
 
   const gen = async t => {
     if (!episode) return;
     setBusy(t);
-    const base = `البودكاست: "${episode.name}" | النوع: ${TYPES[episode.type]?.label}\nالموضوع: ${episode.topic}\n${link ? "رابط الحلقة: " + link : ""}\n\n`;
+    const base = `البودكاست: "${episode.name}" | النوع: ${TYPES[episode.type]?.label}\nالموضوع: ${episode.topic}\n${link?"رابط الحلقة: "+link:""}\n\n`;
     const prompts = {
-      description: base + "اكتب وصفاً احترافياً للحلقة لـ Spotify وAnghami وApple Podcasts:\n- ٣–٥ فقرات\n- جملة تشويقية قوية\n- ما سيستفيده المستمع\n- كلمات مفتاحية\n- دعوة للاشتراك",
-      social: base + "اكتب محتوى السوشيال:\n١. تغريدة X (أقل من 280 حرف)\n٢. منشور انستقرام مع هاشتاقات\n٣. منشور لينكدإن\n٤. اقتباس للتصميم الجرافيكي",
-      email: base + "اكتب نشرة بريدية:\n- سطر موضوع جذاب\n- مقدمة ترحيب\n- ملخص ٣ نقاط\n- أبرز اقتباس\n- رابط للاستماع\n- خاتمة ودية",
-      titles: base + "اقترح ١٠ عناوين بديلة:\n- ٣ تثير الفضول\n- ٣ تركز على الفائدة\n- ٢ تستخدم الأرقام\n- ٢ قصيرة ومباشرة\nلكل عنوان: سبب اختياره.",
+      description: base+"اكتب وصفاً احترافياً للحلقة لـ Spotify وAnghami وApple Podcasts:\n- ٣–٥ فقرات\n- جملة تشويقية قوية\n- ما سيستفيده المستمع\n- كلمات مفتاحية\n- دعوة للاشتراك",
+      social: base+"اكتب محتوى السوشيال:\n١. تغريدة X (أقل من 280 حرف)\n٢. منشور انستقرام مع هاشتاقات\n٣. منشور لينكدإن\n٤. اقتباس للتصميم الجرافيكي",
+      email: base+"اكتب نشرة بريدية:\n- سطر موضوع جذاب\n- مقدمة ترحيب\n- ملخص ٣ نقاط\n- أبرز اقتباس\n- رابط للاستماع\n- خاتمة ودية",
+      titles: base+"اقترح ١٠ عناوين بديلة:\n- ٣ تثير الفضول\n- ٣ تركز على الفائدة\n- ٢ تستخدم الأرقام\n- ٢ قصيرة ومباشرة\nلكل عنوان: سبب اختياره.",
     };
     try {
       const text = await callAI("أنت خبير تسويق بودكاست عربي. ردودك بالعربية.", prompts[t]);
-      setOuts(o => ({ ...o, [t]: text }));
-    } catch (e) { setOuts(o => ({ ...o, [t]: "خطأ: " + e.message })); }
+      setOuts(o => ({ ...o, [t]:text }));
+    } catch (e) { setOuts(o => ({ ...o, [t]:"خطأ: "+e.message })); }
     setBusy("");
   };
 
   const download = () => {
     if (!episode) return;
-    const content = ["# " + episode.name, "**الموضوع:** " + episode.topic,
-      "**النوع:** " + TYPES[episode.type]?.label, "**المدة:** " + episode.duration,
-      link ? "**رابط:** " + link : "", "---", "", "## السكريبت", episode.script || "—", "",
-      outs.description ? "## الوصف\n" + outs.description : "",
-      outs.social ? "## السوشيال\n" + outs.social : "",
-      outs.email ? "## النشرة\n" + outs.email : "",
-      outs.titles ? "## العناوين البديلة\n" + outs.titles : "",
+    const content = ["# "+episode.name,"**الموضوع:** "+episode.topic,
+      "**النوع:** "+TYPES[episode.type]?.label,"**المدة:** "+episode.duration,
+      link?"**رابط:** "+link:"","---","","## السكريبت",episode.script||"—","",
+      outs.description?"## الوصف\n"+outs.description:"",
+      outs.social?"## السوشيال\n"+outs.social:"",
+      outs.email?"## النشرة\n"+outs.email:"",
+      outs.titles?"## العناوين البديلة\n"+outs.titles:"",
     ].filter(Boolean).join("\n");
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([content],{type:"text/plain;charset=utf-8"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.href = url; a.download = (episode.name || "podcast") + ".md"; a.click();
-    URL.revokeObjectURL(url);
-    setDlDone(true);
+    a.href=url; a.download=(episode.name||"podcast")+".md"; a.click();
+    URL.revokeObjectURL(url); setDlDone(true);
   };
 
   return (
     <div className="fade-in">
-      <div style={{ marginBottom: "20px" }}>
-        <div style={{ fontSize: "18px", fontWeight: "700", color: T.tx, marginBottom: "4px" }}>◐ التسويق والنشر</div>
-        <div style={{ color: T.tx2, fontSize: "13px" }}>توليد محتوى تسويقي جاهز لكل المنصات</div>
+      <div style={{ marginBottom:"20px" }}>
+        <div style={{ fontSize:"18px", fontWeight:"700", color:T.tx, marginBottom:"4px" }}>◐ التسويق والنشر</div>
+        <div style={{ color:T.tx2, fontSize:"13px" }}>توليد محتوى تسويقي جاهز لكل المنصات</div>
       </div>
-
       <Field label="رابط الحلقة (اختياري)">
         <Input value={link} onChange={setLink} placeholder="https://open.spotify.com/episode/..." />
       </Field>
-
-      {!episode && (
-        <Card style={{ textAlign: "center", padding: "32px", marginBottom: "16px" }}>
-          <div style={{ color: T.tx2, fontSize: "14px" }}>أنشئ حلقة أولاً من صفحة "إنشاء"</div>
-        </Card>
-      )}
-
-      <div style={{ display: "flex", gap: "3px", background: T.bg, border: `1px solid ${T.brd}`, borderRadius: "8px", padding: "3px", marginBottom: "16px" }}>
+      {!episode && <Card style={{ textAlign:"center", padding:"32px", marginBottom:"16px" }}>
+        <div style={{ color:T.tx2, fontSize:"14px" }}>أنشئ حلقة أولاً من صفحة "إنشاء"</div>
+      </Card>}
+      <div style={{ display:"flex", gap:"3px", background:T.bg, border:`1px solid ${T.brd}`, borderRadius:"8px", padding:"3px", marginBottom:"16px" }}>
         {MTABS.map(t => (
           <button key={t.id} onClick={() => setTab(t.id)} style={{
-            flex: 1, background: tab === t.id ? T.sur : "transparent",
-            border: tab === t.id ? `1px solid ${T.brd}` : "1px solid transparent",
-            borderRadius: "6px", padding: "8px 4px", color: tab === t.id ? T.tx : T.tx2,
-            fontFamily: "'Noto Kufi Arabic', sans-serif", fontWeight: "600", fontSize: "11px",
-            cursor: "pointer", whiteSpace: "nowrap",
+            flex:1, background:tab===t.id?T.sur:"transparent",
+            border:tab===t.id?`1px solid ${T.brd}`:"1px solid transparent",
+            borderRadius:"6px", padding:"8px 4px", color:tab===t.id?T.tx:T.tx2,
+            fontFamily:"'Noto Kufi Arabic',sans-serif", fontWeight:"600", fontSize:"11px", cursor:"pointer", whiteSpace:"nowrap",
           }}>{t.l}</button>
         ))}
       </div>
-
-      <Btn variant="fill" full disabled={!episode || !!busy} onClick={() => gen(tab)}>
-        {busy === tab ? "جارٍ التوليد..." : "توليد " + MTABS.find(t => t.id === tab)?.l}
+      <Btn variant="fill" full disabled={!episode||!!busy} onClick={() => gen(tab)}>
+        {busy===tab?"جارٍ التوليد...":"توليد "+MTABS.find(t=>t.id===tab)?.l}
       </Btn>
-
-      {busy === tab && <Spinner />}
-
-      {outs[tab] && busy !== tab && (
-        <div style={{ marginTop: "16px" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-            <div style={{ fontSize: "11px", letterSpacing: "0.12em", color: T.tx2, textTransform: "uppercase" }}>{MTABS.find(t => t.id === tab)?.l}</div>
+      {busy===tab && <Spinner />}
+      {outs[tab] && busy!==tab && (
+        <div style={{ marginTop:"16px" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
+            <div style={{ fontSize:"11px", letterSpacing:"0.12em", color:T.tx2, textTransform:"uppercase" }}>{MTABS.find(t=>t.id===tab)?.l}</div>
             <CopyBtn text={outs[tab]} />
           </div>
           <OutputBox text={outs[tab]} />
         </div>
       )}
-
-      <div style={{ marginTop: "22px", borderTop: `1px solid ${T.brd}`, paddingTop: "18px" }}>
-        <div style={{ fontSize: "12px", color: T.tx2, marginBottom: "10px" }}>حفظ كل محتوى الحلقة في ملف واحد</div>
+      <div style={{ marginTop:"22px", borderTop:`1px solid ${T.brd}`, paddingTop:"18px" }}>
+        <div style={{ fontSize:"12px", color:T.tx2, marginBottom:"10px" }}>حفظ كل محتوى الحلقة في ملف واحد</div>
         <Btn variant="outline" full disabled={!episode} onClick={download}>⬇ تنزيل ملف الحلقة</Btn>
         {dlDone && <NextBanner msg="الحلقة مكتملة" sub="شاهد جميع حلقاتك المحفوظة" label="حلقاتي" onClick={() => onNav("episodes")} color={T.ok} />}
       </div>
@@ -704,45 +752,38 @@ const MarketingScreen = ({ episode, onNav }) => {
 // ── Episodes Screen ────────────────────────────────────────────────────────
 const EpisodesScreen = ({ onLoad }) => {
   const [eps, setEps] = useState(gEps);
-
   const del = id => {
     const u = eps.filter(e => e.id !== id);
-    localStorage.setItem(EK, JSON.stringify(u));
-    setEps(u);
+    localStorage.setItem(EK, JSON.stringify(u)); setEps(u);
   };
-
   return (
     <div className="fade-in">
-      <div style={{ marginBottom: "20px" }}>
-        <div style={{ fontSize: "18px", fontWeight: "700", color: T.tx, marginBottom: "4px" }}>▦ حلقاتي</div>
-        <div style={{ color: T.tx2, fontSize: "13px" }}>{eps.length} حلقة محفوظة</div>
+      <div style={{ marginBottom:"20px" }}>
+        <div style={{ fontSize:"18px", fontWeight:"700", color:T.tx, marginBottom:"4px" }}>▦ حلقاتي</div>
+        <div style={{ color:T.tx2, fontSize:"13px" }}>{eps.length} حلقة محفوظة</div>
       </div>
-
-      {eps.length === 0 && (
-        <Card style={{ textAlign: "center", padding: "44px" }}>
-          <div style={{ fontSize: "30px", marginBottom: "12px" }}>◌</div>
-          <div style={{ color: T.tx2, fontSize: "14px" }}>لا توجد حلقات — ابدأ من صفحة "إنشاء"</div>
-        </Card>
-      )}
-
-      <div style={{ display: "grid", gap: "10px" }}>
+      {eps.length === 0 && <Card style={{ textAlign:"center", padding:"44px" }}>
+        <div style={{ fontSize:"30px", marginBottom:"12px" }}>◌</div>
+        <div style={{ color:T.tx2, fontSize:"14px" }}>لا توجد حلقات — ابدأ من صفحة "إنشاء"</div>
+      </Card>}
+      <div style={{ display:"grid", gap:"10px" }}>
         {eps.map(ep => (
-          <Card key={ep.id} style={{ padding: "16px" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+          <Card key={ep.id} style={{ padding:"16px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"8px" }}>
               <div>
-                <div style={{ fontWeight: "700", color: T.tx, fontSize: "14px", marginBottom: "5px" }}>{ep.name}</div>
-                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                <div style={{ fontWeight:"700", color:T.tx, fontSize:"14px", marginBottom:"5px" }}>{ep.name}</div>
+                <div style={{ display:"flex", gap:"8px", alignItems:"center" }}>
                   <Badge type={ep.type} />
-                  <span style={{ color: T.tx2, fontSize: "11px" }}>{ep.duration}</span>
+                  <span style={{ color:T.tx2, fontSize:"11px" }}>{ep.duration}</span>
                 </div>
               </div>
-              <button onClick={() => del(ep.id)} style={{ background: "none", border: "none", color: T.tx3, cursor: "pointer", fontSize: "15px" }}>✕</button>
+              <button onClick={() => del(ep.id)} style={{ background:"none", border:"none", color:T.tx3, cursor:"pointer", fontSize:"15px" }}>✕</button>
             </div>
-            <div style={{ color: T.tx2, fontSize: "12px", marginBottom: "10px", lineHeight: "1.6" }}>
-              {(ep.topic || "").slice(0, 90)}{(ep.topic || "").length > 90 ? "..." : ""}
+            <div style={{ color:T.tx2, fontSize:"12px", marginBottom:"10px", lineHeight:"1.6" }}>
+              {(ep.topic||"").slice(0,90)}{(ep.topic||"").length>90?"...":""}
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <span style={{ fontSize: "11px", color: T.tx3 }}>{new Date(ep.createdAt).toLocaleDateString("ar-SA")}</span>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span style={{ fontSize:"11px", color:T.tx3 }}>{new Date(ep.createdAt).toLocaleDateString("ar-SA")}</span>
               <Btn variant="fill" small onClick={() => onLoad(ep)}>تحميل</Btn>
             </div>
           </Card>
@@ -752,125 +793,11 @@ const EpisodesScreen = ({ onLoad }) => {
   );
 };
 
-// ── Auth Screen ────────────────────────────────────────────────────────────
-const AuthScreen = ({ onAuth }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [mode, setMode] = useState("login"); // login | signup | reset
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState({ text: "", ok: false });
-
-  const handle = async () => {
-    if (!email.trim() || (!password.trim() && mode !== "reset")) return;
-    setBusy(true); setMsg({ text: "", ok: false });
-    try {
-      if (mode === "login") {
-        const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        if (error) throw new Error(error.message);
-        onAuth(data.user);
-      } else if (mode === "signup") {
-        const { data, error } = await sb.auth.signUp({ email, password });
-        if (error) throw new Error(error.message);
-        setMsg({ text: "تم إنشاء الحساب — تحقق من بريدك لتفعيل الحساب", ok: true });
-      } else {
-        const { error } = await sb.auth.resetPasswordForEmail(email);
-        if (error) throw new Error(error.message);
-        setMsg({ text: "تم إرسال رابط إعادة تعيين كلمة المرور لبريدك", ok: true });
-      }
-    } catch (e) {
-      const msgs = {
-        "Invalid login credentials": "البريد أو كلمة المرور غير صحيحة",
-        "User already registered": "هذا البريد مسجّل بالفعل — سجّل دخول",
-        "Password should be at least 6 characters": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
-      };
-      setMsg({ text: msgs[e.message] || e.message, ok: false });
-    }
-    setBusy(false);
-  };
-
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", background: T.bg }}>
-      <div style={{ width: "100%", maxWidth: "420px" }} className="fade-in">
-
-        {/* Logo */}
-        <div style={{ textAlign: "center", marginBottom: "40px" }}>
-          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "100px", padding: "5px 16px", marginBottom: "16px" }}>
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.acc, boxShadow: `0 0 8px ${T.acc}` }} />
-            <span style={{ color: T.tx2, fontSize: "11px", letterSpacing: "0.13em" }}>PODCAST STUDIO</span>
-          </div>
-          <div style={{ fontSize: "24px", fontWeight: "700", color: T.tx, marginBottom: "6px" }}>استوديو البودكاست</div>
-          <div style={{ color: T.tx2, fontSize: "13px" }}>من الفكرة إلى النشر</div>
-        </div>
-
-        {/* Card */}
-        <Card>
-          <div style={{ fontSize: "17px", fontWeight: "700", color: T.tx, marginBottom: "6px" }}>
-            {mode === "login" ? "تسجيل الدخول" : mode === "signup" ? "إنشاء حساب جديد" : "استعادة كلمة المرور"}
-          </div>
-          <div style={{ color: T.tx2, fontSize: "12px", marginBottom: "24px" }}>
-            {mode === "login" ? "أدخل بياناتك للمتابعة" : mode === "signup" ? "أنشئ حسابك مجاناً" : "سنرسل رابط الاستعادة لبريدك"}
-          </div>
-
-          <Field label="البريد الإلكتروني">
-            <Input value={email} onChange={setEmail} placeholder="example@email.com" style={{ direction: "ltr" }} />
-          </Field>
-
-          {mode !== "reset" && (
-            <Field label="كلمة المرور">
-              <input
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="••••••••"
-                onKeyDown={e => e.key === "Enter" && handle()}
-                style={{ ...inputStyle, direction: "ltr" }}
-                onFocus={e => e.target.style.borderColor = T.acc}
-                onBlur={e => e.target.style.borderColor = T.brd}
-              />
-            </Field>
-          )}
-
-          {msg.text && (
-            <div style={{ padding: "10px 14px", borderRadius: "8px", fontSize: "13px", marginBottom: "16px",
-              background: msg.ok ? T.ok + "20" : "#c05040" + "20",
-              border: `1px solid ${msg.ok ? T.ok : "#c05040"}40`,
-              color: msg.ok ? T.ok : "#e07060" }}>
-              {msg.text}
-            </div>
-          )}
-
-          <Btn variant="fill" full disabled={busy || !email.trim() || (mode !== "reset" && !password.trim())} onClick={handle}>
-            {busy ? "جارٍ المعالجة..." : mode === "login" ? "دخول" : mode === "signup" ? "إنشاء الحساب" : "إرسال رابط الاستعادة"}
-          </Btn>
-
-          <div style={{ marginTop: "20px", borderTop: `1px solid ${T.brd}`, paddingTop: "18px", display: "flex", flexDirection: "column", gap: "10px" }}>
-            {mode === "login" && (
-              <>
-                <button onClick={() => { setMode("signup"); setMsg({ text: "", ok: false }); }} style={{ background: "none", border: "none", color: T.acc, fontSize: "13px", cursor: "pointer" }}>
-                  ليس لديك حساب؟ أنشئ حساباً جديداً
-                </button>
-                <button onClick={() => { setMode("reset"); setMsg({ text: "", ok: false }); }} style={{ background: "none", border: "none", color: T.tx2, fontSize: "12px", cursor: "pointer" }}>
-                  نسيت كلمة المرور؟
-                </button>
-              </>
-            )}
-            {mode !== "login" && (
-              <button onClick={() => { setMode("login"); setMsg({ text: "", ok: false }); }} style={{ background: "none", border: "none", color: T.acc, fontSize: "13px", cursor: "pointer" }}>
-                لديك حساب بالفعل؟ سجّل دخول
-              </button>
-            )}
-          </div>
-        </Card>
-      </div>
-    </div>
-  );
-};
-
 // ── App ────────────────────────────────────────────────────────────────────
 const App = () => {
   const [tab, setTab] = useState("create");
   const [showStyle, setShowStyle] = useState(false);
-  const [hasStyle, setHasStyle] = useState(() => { const s = gStyle(); return !!(s.tone || s.opening); });
+  const [hasStyle, setHasStyle] = useState(() => { const s = gStyle(); return !!(s.tone||s.opening); });
   const [episode, setEpisode] = useState(null);
   const [user, setUser] = useState(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -887,84 +814,74 @@ const App = () => {
   }, []);
 
   if (authLoading) return (
-    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: T.bg }}>
+    <div style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", background:T.bg }}>
       <Spinner />
     </div>
   );
 
   if (!user) return <AuthScreen onAuth={setUser} />;
 
-  const handleLoad = ep => { setEpisode(ep); setTab("create"); };
-
-  const signOut = async () => {
-    await sb.auth.signOut();
-    setUser(null);
-  };
+  const signOut = async () => { await sb.auth.signOut(); setUser(null); };
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 14px" }}>
-
-      {showStyle && <StyleModal onClose={() => setShowStyle(false)} onSave={() => { const s = gStyle(); setHasStyle(!!(s.tone || s.opening)); }} />}
+    <div style={{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", padding:"24px 14px" }}>
+      {showStyle && <StyleModal onClose={() => setShowStyle(false)} onSave={() => { const s=gStyle(); setHasStyle(!!(s.tone||s.opening)); }} />}
 
       {/* Header */}
-      <div style={{ width: "100%", maxWidth: "620px", marginBottom: "22px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+      <div style={{ width:"100%", maxWidth:"620px", marginBottom:"22px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
           <div>
-            <div style={{ display: "inline-flex", alignItems: "center", gap: "7px", background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "100px", padding: "4px 14px", marginBottom: "12px" }}>
-              <div style={{ width: "5px", height: "5px", borderRadius: "50%", background: T.acc, boxShadow: `0 0 6px ${T.acc}` }} />
-              <span style={{ color: T.tx2, fontSize: "10px", letterSpacing: "0.13em" }}>PODCAST STUDIO</span>
+            <div style={{ display:"inline-flex", alignItems:"center", gap:"7px", background:T.sur, border:`1px solid ${T.brd}`, borderRadius:"100px", padding:"4px 14px", marginBottom:"12px" }}>
+              <div style={{ width:"5px", height:"5px", borderRadius:"50%", background:T.acc, boxShadow:`0 0 6px ${T.acc}` }} />
+              <span style={{ color:T.tx2, fontSize:"10px", letterSpacing:"0.13em" }}>PODCAST STUDIO</span>
             </div>
-            <div style={{ fontSize: "22px", fontWeight: "700", color: T.tx, marginBottom: "2px" }}>استوديو البودكاست</div>
-            <div style={{ color: T.tx2, fontSize: "12px" }}>من الفكرة إلى النشر</div>
-<div style={{ marginTop: "6px", fontSize: "11px", color: T.tx3 }}>
-  {user?.email}
-</div>
+            <div style={{ fontSize:"22px", fontWeight:"700", color:T.tx, marginBottom:"2px" }}>استوديو البودكاست</div>
+            <div style={{ color:T.tx2, fontSize:"12px" }}>من الفكرة إلى النشر</div>
+            <div style={{ color:T.tx3, fontSize:"11px", marginTop:"4px" }}>{user.email}</div>
           </div>
-          <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+          <div style={{ display:"flex", gap:"8px", alignItems:"flex-start" }}>
             <button onClick={() => setShowStyle(true)} style={{
-            background: hasStyle ? T.accL : T.sur,
-            border: `1px solid ${hasStyle ? T.acc : T.brd}`,
-            borderRadius: "10px", padding: "10px 14px", cursor: "pointer",
-            color: hasStyle ? T.acc : T.tx2,
-            fontFamily: "'Noto Kufi Arabic', sans-serif", fontWeight: "700", fontSize: "11px", textAlign: "center",
-          }}>
-            <div style={{ fontSize: "18px", marginBottom: "2px" }}>✦</div>
-            <div>أسلوبي</div>
-            <div style={{ fontSize: "9px", marginTop: "2px", opacity: 0.7 }}>{hasStyle ? "مفعّل" : "غير مُعدّ"}</div>
-          </button>
-            <button onClick={signOut} style={{
-              background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "10px",
-              padding: "9px 13px", cursor: "pointer", color: T.tx2,
-              fontFamily: "'Noto Kufi Arabic', sans-serif", fontWeight: "700", fontSize: "11px", textAlign: "center",
+              background:hasStyle?T.accL:T.sur, border:`1px solid ${hasStyle?T.acc:T.brd}`,
+              borderRadius:"10px", padding:"10px 14px", cursor:"pointer", color:hasStyle?T.acc:T.tx2,
+              fontFamily:"'Noto Kufi Arabic',sans-serif", fontWeight:"700", fontSize:"11px", textAlign:"center",
             }}>
-              <div style={{ fontSize: "17px", marginBottom: "2px" }}>→</div>
+              <div style={{ fontSize:"18px", marginBottom:"2px" }}>✦</div>
+              <div>أسلوبي</div>
+              <div style={{ fontSize:"9px", marginTop:"2px", opacity:0.7 }}>{hasStyle?"مفعّل":"غير مُعدّ"}</div>
+            </button>
+            <button onClick={signOut} style={{
+              background:T.sur, border:`1px solid ${T.brd}`, borderRadius:"10px",
+              padding:"10px 14px", cursor:"pointer", color:T.tx2,
+              fontFamily:"'Noto Kufi Arabic',sans-serif", fontWeight:"700", fontSize:"11px", textAlign:"center",
+            }}>
+              <div style={{ fontSize:"18px", marginBottom:"2px" }}>→</div>
               <div>خروج</div>
             </button>
           </div>
         </div>
 
         {episode && (
-          <div style={{ marginTop: "12px", background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "9px" }}>
-            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.ok, flexShrink: 0 }} />
-            <span style={{ color: T.tx2, fontSize: "11px" }}>الحلقة الحالية:</span>
-            <span style={{ fontWeight: "700", fontSize: "12px", color: T.tx }}>{episode.name}</span>
+          <div style={{ marginTop:"12px", background:T.sur, border:`1px solid ${T.brd}`, borderRadius:"8px", padding:"10px 14px", display:"flex", alignItems:"center", gap:"9px" }}>
+            <div style={{ width:"6px", height:"6px", borderRadius:"50%", background:T.ok, flexShrink:0 }} />
+            <span style={{ color:T.tx2, fontSize:"11px" }}>الحلقة الحالية:</span>
+            <span style={{ fontWeight:"700", fontSize:"12px", color:T.tx }}>{episode.name}</span>
             <Badge type={episode.type} />
           </div>
         )}
       </div>
 
       {/* Main */}
-      <div style={{ width: "100%", maxWidth: "620px" }}>
-        <div style={{ background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "16px", padding: "24px" }}>
+      <div style={{ width:"100%", maxWidth:"620px" }}>
+        <div style={{ background:T.sur, border:`1px solid ${T.brd}`, borderRadius:"16px", padding:"24px" }}>
           <Nav active={tab} onChange={setTab} />
           {tab === "create"     && <CreateScreen onEpReady={setEpisode} onNav={setTab} user={user} />}
           {tab === "production" && <ProductionScreen episode={episode} onNav={setTab} />}
           {tab === "marketing"  && <MarketingScreen episode={episode} onNav={setTab} />}
-          {tab === "episodes"   && <EpisodesScreen onLoad={handleLoad} />}
+          {tab === "episodes"   && <EpisodesScreen onLoad={ep => { setEpisode(ep); setTab("create"); }} />}
         </div>
       </div>
 
-      <div style={{ color: T.tx3, fontSize: "10px", marginTop: "20px", textAlign: "center" }}>
+      <div style={{ color:T.tx3, fontSize:"10px", marginTop:"20px", textAlign:"center" }}>
         المحتوى المولد للاسترشاد والتعديل قبل النشر
       </div>
     </div>
