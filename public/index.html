@@ -6,774 +6,148 @@
 <title>استوديو البودكاست</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: #0a0a0f; font-family: 'Noto Kufi Arabic', sans-serif; direction: rtl; color: #e8e4d8; min-height: 100vh; }
-  input, textarea, select { font-family: 'Noto Kufi Arabic', sans-serif; }
-  textarea:focus, input:focus, select:focus { border-color: #c8a96e !important; outline: none; }
-  ::-webkit-scrollbar { width: 5px; }
-  ::-webkit-scrollbar-track { background: #12121a; }
-  ::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 3px; }
-  button { transition: opacity 0.15s; cursor: pointer; font-family: 'Noto Kufi Arabic', sans-serif; }
-  button:hover:not(:disabled) { opacity: 0.82; }
-  @keyframes spin { to { transform: rotate(360deg); } }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0a0a0f;font-family:'Noto Kufi Arabic',sans-serif;direction:rtl;color:#e8e4d8;min-height:100vh;}
+input,textarea,select{font-family:'Noto Kufi Arabic',sans-serif;}
+textarea:focus,input:focus,select:focus{border-color:#c8a96e!important;outline:none;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:#12121a;}
+::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:3px;}
+button{transition:opacity 0.15s;cursor:pointer;font-family:'Noto Kufi Arabic',sans-serif;}
+button:hover:not(:disabled){opacity:.82;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
 <div id="root"></div>
-
 <script>
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-const STYLE_KEY = "ps_style_v5";
-const EPS_KEY = "ps_eps_v5";
-const API_KEY_STORAGE = "ps_api_key";
+const STYLE_KEY="ps_style_v5",EPS_KEY="ps_eps_v5";
+const TYPES={solo:{label:"فردي",icon:"◎",desc:"مذيع واحد يقدم المحتوى بمفرده",color:"#4e9e8f"},group:{label:"جماعي",icon:"◈",desc:"أكثر من مذيع يناقشون موضوعاً",color:"#7e6db5"},interview:{label:"حواري",icon:"◇",desc:"استضافة ضيف والتحاور معه",color:"#c05c5c"}};
+const DURS=["١٠–٢٠ دقيقة","٢٠–٤٠ دقيقة","٤٠–٦٠ دقيقة","٦٠–٩٠ دقيقة","أكثر من ٩٠ دقيقة"];
+const FREQS=["يومي","أسبوعي","نصف شهري","شهري","غير منتظم"];
+const getStyle=()=>{try{return JSON.parse(localStorage.getItem(STYLE_KEY))||{};}catch{return{};}};
+const getEps=()=>{try{return JSON.parse(localStorage.getItem(EPS_KEY))||[];}catch{return[];}};
+const saveEp=ep=>{const eps=getEps(),i=eps.findIndex(e=>e.id===ep.id);if(i>=0)eps[i]=ep;else eps.unshift(ep);localStorage.setItem(EPS_KEY,JSON.stringify(eps));};
 
-const TYPES = {
-  solo:      { label: "فردي",   icon: "◎", desc: "مذيع واحد يقدم المحتوى بمفرده",   color: "#4e9e8f" },
-  group:     { label: "جماعي", icon: "◈", desc: "أكثر من مذيع يناقشون موضوعاً",    color: "#7e6db5" },
-  interview: { label: "حواري", icon: "◇", desc: "استضافة ضيف والتحاور معه",         color: "#c05c5c" },
-};
-const DURS  = ["١٠–٢٠ دقيقة","٢٠–٤٠ دقيقة","٤٠–٦٠ دقيقة","٦٠–٩٠ دقيقة","أكثر من ٩٠ دقيقة"];
-const FREQS = ["يومي","أسبوعي","نصف شهري","شهري","غير منتظم"];
-
-// ─── HELPERS ──────────────────────────────────────────────────────────────────
-const getApiKey = () => localStorage.getItem(API_KEY_STORAGE) || "";
-const getStyle  = () => { try { return JSON.parse(localStorage.getItem(STYLE_KEY)) || {}; } catch { return {}; } };
-const getEps    = () => { try { return JSON.parse(localStorage.getItem(EPS_KEY)) || []; } catch { return []; } };
-const saveEp    = ep => {
-  const eps = getEps(); const i = eps.findIndex(e => e.id === ep.id);
-  if (i >= 0) eps[i] = ep; else eps.unshift(ep);
-  localStorage.setItem(EPS_KEY, JSON.stringify(eps));
-};
-
-const callClaude = async (system, userMsg, maxTokens = 3500) => {
-  const res = await fetch("https://podcast-api.sabahoo-pc.workers.dev/", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: maxTokens,
-      system,
-      messages: [{ role: "user", content: userMsg }],
-    }),
+const callClaude=async(system,userMsg,maxTokens=3500)=>{
+  const res=await fetch("https://podcast-api.sabahoo-pc.workers.dev/",{
+    method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:maxTokens,system,messages:[{role:"user",content:userMsg}]}),
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || "HTTP " + res.status);
-  }
-  const json = await res.json();
-  return (json.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+  if(!res.ok){const err=await res.json().catch(()=>({}));throw new Error(err?.error?.message||"HTTP "+res.status);}
+  const json=await res.json();
+  return(json.content||[]).filter(b=>b.type==="text").map(b=>b.text).join("\n");
 };
 
-// ─── STATE ────────────────────────────────────────────────────────────────────
-let state = {
-  tab: "create",
-  showStyle: false,
-  hasStyle: false,
-  episode: null,
-  step: 0,
-  form: { name: "", type: "", duration: "", frequency: "", topic: "", hostCount: 2 },
-  script: "",
-  scriptLoading: false,
-  scriptCopied: false,
-  prodFormat: "",
-  prodResult: "",
-  prodLoading: false,
-  prodCopied: false,
-  mktLink: "",
-  mktTab: "description",
-  mktOutputs: {},
-  mktLoading: "",
-  mktCopied: "",
-  mktDlDone: false,
-  styleForm: {},
-  styleSample: "",
-  styleAnalyzing: false,
-  episodes: getEps(),
-};
+let state={tab:"create",showStyle:false,hasStyle:false,episode:null,step:0,
+  form:{name:"",type:"",duration:"",frequency:"",topic:"",hostCount:2},
+  script:"",scriptLoading:false,prodFormat:"",prodResult:"",prodLoading:false,
+  mktLink:"",mktTab:"description",mktOutputs:{},mktLoading:"",mktDlDone:false,
+  styleForm:{},styleSample:"",styleAnalyzing:false,episodes:getEps()};
+let RT=null;
+const setState=patch=>{Object.assign(state,typeof patch==="function"?patch(state):patch);clearTimeout(RT);RT=setTimeout(render,16);};
 
-let renderTimeout = null;
-const setState = patch => {
-  Object.assign(state, typeof patch === "function" ? patch(state) : patch);
-  clearTimeout(renderTimeout);
-  renderTimeout = setTimeout(render, 16);
-};
-
-// ─── UI HELPERS ───────────────────────────────────────────────────────────────
-const el = (tag, attrs, ...children) => {
-  const e = document.createElement(tag);
-  if (attrs) {
-    for (const [k, v] of Object.entries(attrs)) {
-      if (k === "style") Object.assign(e.style, v);
-      else if (k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
-      else if (k === "className") e.className = v;
-      else e.setAttribute(k, v);
-    }
-  }
-  for (const c of children.flat(Infinity)) {
-    if (c == null || c === false) continue;
-    e.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
-  }
+const el=(tag,attrs,...children)=>{
+  const e=document.createElement(tag);
+  if(attrs)for(const[k,v]of Object.entries(attrs)){if(k==="style")Object.assign(e.style,v);else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);else e.setAttribute(k,v);}
+  for(const c of children.flat(Infinity)){if(c==null||c===false)continue;e.appendChild(typeof c==="string"?document.createTextNode(c):c);}
   return e;
 };
 
-const C = { bg:"#0a0a0f", surface:"#12121a", card:"#1a1a26", border:"#2a2a3e",
-  accent:"#c8a96e", accentDim:"#8a7048", accentGlow:"rgba(200,169,110,0.12)",
-  text:"#e8e4d8", muted:"#7a7890", dim:"#4a4860", ok:"#4e9e6f" };
+const C={bg:"#0a0a0f",surface:"#12121a",card:"#1a1a26",border:"#2a2a3e",accent:"#c8a96e",accentDim:"#8a7048",accentGlow:"rgba(200,169,110,0.12)",text:"#e8e4d8",muted:"#7a7890",dim:"#4a4860",ok:"#4e9e6f"};
+const IS={width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:"6px",padding:"11px 13px",color:C.text,fontSize:"14px",direction:"rtl",lineHeight:"1.8",boxSizing:"border-box"};
+const mkInput=(v,cb,ph,style={})=>el("input",{value:v,onInput:e=>cb(e.target.value),placeholder:ph,style:{...IS,...style}});
+const mkTextarea=(v,cb,ph,rows=4)=>{const t=el("textarea",{placeholder:ph,rows,style:{...IS,resize:"vertical"}});t.value=v;t.addEventListener("input",e=>cb(e.target.value));return t;};
+const mkSelect=(v,cb,opts,ph)=>{const s=el("select",{style:{...IS,cursor:"pointer",appearance:"none",color:v?C.text:C.muted}},el("option",{value:"",disabled:true},ph),...opts.map(o=>el("option",{value:o},o)));s.value=v;s.addEventListener("change",e=>cb(e.target.value));return s;};
+const mkBtn=(text,onClick,o={})=>el("button",{onClick,disabled:o.disabled,style:{background:o.accent?(o.color||C.accent):o.outline?"transparent":C.card,border:o.outline?`1px solid ${C.border}`:o.accent?"none":`1px solid ${C.border}`,borderRadius:"6px",color:o.accent?"#0a0a0f":C.muted,fontWeight:"700",fontSize:o.small?"12px":"14px",padding:o.small?"6px 14px":"11px 22px",opacity:o.disabled?"0.4":"1",cursor:o.disabled?"not-allowed":"pointer",width:o.full?"100%":"auto"}},text);
+const mkCard=(ch,st={})=>el("div",{style:{background:C.card,border:`1px solid ${st.hi||C.border}`,borderRadius:"12px",padding:"22px",...st}},...ch);
+const mkBadge=type=>{const t=TYPES[type];return el("span",{style:{fontSize:"12px",fontWeight:"700",padding:"2px 9px",borderRadius:"5px",background:`${t.color}20`,border:`1px solid ${t.color}`,color:t.color}},`${t.icon} ${t.label}`);};
+const mkSpinner=()=>el("div",{style:{textAlign:"center",padding:"36px 0"}},el("div",{style:{width:"32px",height:"32px",border:`3px solid ${C.border}`,borderTop:`3px solid ${C.accent}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}),el("div",{style:{color:C.muted,fontSize:"13px"}},"جارٍ التوليد..."));
+const mkDots=(cur,tot)=>el("div",{style:{display:"flex",gap:"5px",justifyContent:"center",marginBottom:"28px"}},...Array.from({length:tot},(_,i)=>el("div",{style:{width:i===cur?"22px":"7px",height:"7px",borderRadius:"4px",background:i===cur?C.accent:i<cur?C.accentDim:C.border,transition:"all 0.3s"}})));
+const mkLbl=t=>el("div",{style:{fontSize:"11px",letterSpacing:"0.13em",color:C.muted,textTransform:"uppercase",marginBottom:"8px"}},t);
+const mkOut=t=>el("div",{style:{background:C.bg,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"18px",color:C.text,fontSize:"13px",lineHeight:"2",direction:"rtl",whiteSpace:"pre-wrap",maxHeight:"360px",overflowY:"auto"}},t);
+const mkCopy=t=>{const b=mkBtn("نسخ",()=>{navigator.clipboard.writeText(t);b.textContent="✓ تم";setTimeout(()=>{b.textContent="نسخ";},2000);},{outline:true,small:true});return b;};
+const mkNext=(msg,sub,lbl,cb,color=C.accent)=>el("div",{style:{marginTop:"14px",padding:"12px 16px",borderRadius:"10px",background:`${color}15`,border:`1px solid ${color}40`,display:"flex",alignItems:"center",justifyContent:"space-between"}},el("div",null,el("div",{style:{color,fontWeight:"700",fontSize:"13px",marginBottom:"2px"}},"✓ "+msg),el("div",{style:{color:C.muted,fontSize:"11px"}},sub)),mkBtn(lbl+" ←",cb,{accent:true,small:true,color}));
+const stBlk=()=>{const s=getStyle();if(!Object.keys(s).length)return"";const l=[s.tone&&"النبرة: "+s.tone,s.opening&&"الافتتاح: "+s.opening,s.language&&"اللغة: "+s.language,s.structure&&"البناء: "+s.structure,s.closing&&"الختام: "+s.closing,s.distinctive&&"البصمة: "+s.distinctive].filter(Boolean);return l.length?"\n\n--- أسلوب المذيع (التزم به) ---\n"+l.join("\n")+"\n--------------------------------":"";};
 
-const inp = (extra={}) => ({
-  width:"100%", background:C.bg, border:`1px solid ${C.border}`, borderRadius:"6px",
-  padding:"11px 13px", color:C.text, fontSize:"14px", direction:"rtl",
-  lineHeight:"1.8", boxSizing:"border-box", ...extra
-});
+const mkNav=()=>el("div",{style:{display:"flex",gap:"3px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"10px",padding:"4px",marginBottom:"20px"}},...[{id:"create",l:"إنشاء"},{id:"production",l:"الإنتاج"},{id:"marketing",l:"التسويق"},{id:"episodes",l:"حلقاتي"}].map(t=>el("button",{onClick:()=>setState({tab:t.id}),style:{flex:"1",background:state.tab===t.id?C.accent:"transparent",border:"none",borderRadius:"7px",padding:"9px 4px",color:state.tab===t.id?"#0a0a0f":C.muted,fontWeight:"700",fontSize:"12px"}},t.l)));
 
-const mkInput = (value, onChange, placeholder, style={}) =>
-  el("input", { value, onInput: e => onChange(e.target.value), placeholder, style: inp(style) });
-
-const mkTextarea = (value, onChange, placeholder, rows=4) => {
-  const t = el("textarea", { placeholder, rows, style: inp({ resize: "vertical" }) });
-  t.value = value;
-  t.addEventListener("input", e => onChange(e.target.value));
-  return t;
-};
-
-const mkSelect = (value, onChange, options, placeholder) => {
-  const s = el("select", { style: inp({ cursor:"pointer", appearance:"none" }) }, 
-    el("option", { value:"", disabled:true }, placeholder),
-    ...options.map(o => el("option", { value:o }, o))
+function mkStyleModal(){
+  const ov=el("div",{style:{position:"fixed",inset:"0",background:"rgba(0,0,0,.78)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:"9999",padding:"16px"}});
+  const bx=el("div",{style:{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"14px",width:"100%",maxWidth:"520px",maxHeight:"90vh",overflowY:"auto",padding:"24px"}});
+  const smIn=mkTextarea(state.styleSample,v=>setState({styleSample:v}),"الصق مقطعاً من حلقة سابقة...",3);
+  const anBtn=mkBtn(state.styleAnalyzing?"جارٍ التحليل...":"تحليل وملء تلقائي",async()=>{if(!state.styleSample.trim()||state.styleAnalyzing)return;setState({styleAnalyzing:true});try{const raw=await callClaude("أنت محلل أسلوب. ردودك JSON فقط بدون أي نص إضافي.",`حلّل هذا السكريبت وأجب بـ JSON فقط:\n{"tone":"","opening":"","language":"","structure":"","closing":"","distinctive":""}\n\nالسكريبت: ${state.styleSample}`,600);const p=JSON.parse(raw.trim());setState({styleForm:{...state.styleForm,...p},styleAnalyzing:false});}catch{setState({styleAnalyzing:false});}},{accent:true,small:true,color:C.accent,disabled:state.styleAnalyzing});
+  bx.append(
+    el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}},el("div",null,el("div",{style:{fontSize:"16px",fontWeight:"700",color:C.text}},"✦ ملف أسلوبي"),el("div",{style:{color:C.muted,fontSize:"12px",marginTop:"3px"}},"يُطبَّق تلقائياً في كل سكريبت")),el("button",{onClick:()=>setState({showStyle:false}),style:{background:"none",border:"none",color:C.muted,fontSize:"20px"}},"✕")),
+    mkCard([el("div",{style:{fontSize:"12px",color:C.accent,fontWeight:"700",marginBottom:"7px"}},"استخراج تلقائي من سكريبت سابق"),smIn,el("div",{style:{marginTop:"10px"}},anBtn)],{marginBottom:"16px",hi:`${C.accent}50`}),
+    el("div",{style:{display:"grid",gap:"12px"}},...[{k:"tone",l:"النبرة العامة",ph:"دافئ، تحليلي، حماسي..."},{k:"opening",l:"طريقة الافتتاح",ph:"سؤال تشويقي، قصة..."},{k:"language",l:"نوع اللغة",ph:"فصحى / خليجية / مزيج..."},{k:"closing",l:"طريقة الختام",ph:"سؤال للمتابعين، توصية..."},{k:"distinctive",l:"بصمتك المميزة",ph:"ما يجعل أسلوبك مختلفاً..."}].map(f=>el("div",null,mkLbl(f.l),mkInput(state.styleForm[f.k]||"",v=>setState({styleForm:{...state.styleForm,[f.k]:v}}),f.ph))),el("div",null,mkLbl("بناء المحتوى وتدفقه"),mkTextarea(state.styleForm.structure||"",v=>setState({styleForm:{...state.styleForm,structure:v}}),"كيف تنظم أفكارك...",3))),
+    el("div",{style:{display:"flex",justifyContent:"space-between",marginTop:"20px"}},mkBtn("إلغاء",()=>setState({showStyle:false}),{outline:true}),mkBtn("حفظ الملف",()=>{localStorage.setItem(STYLE_KEY,JSON.stringify({...state.styleForm,ts:Date.now()}));const sf=state.styleForm;setState({showStyle:false,hasStyle:!!(sf.tone||sf.opening)});},{accent:true,disabled:!(state.styleForm.tone||state.styleForm.opening)}))
   );
-  s.value = value;
-  s.addEventListener("change", e => onChange(e.target.value));
-  return s;
-};
+  ov.appendChild(bx);return ov;
+}
 
-const mkBtn = (text, onClick, opts={}) => {
-  const { accent, outline, small, full, disabled, color } = opts;
-  const bg = accent ? (color || C.accent) : outline ? "transparent" : C.card;
-  const border = outline ? `1px solid ${C.border}` : accent ? "none" : `1px solid ${C.border}`;
-  const fg = accent ? "#0a0a0f" : C.muted;
-  return el("button", {
-    onClick, disabled,
-    style: {
-      background: bg, border, borderRadius:"6px", color: fg,
-      fontWeight:"700", fontSize: small ? "12px" : "14px",
-      padding: small ? "6px 14px" : "11px 22px",
-      opacity: disabled ? "0.4" : "1", cursor: disabled ? "not-allowed" : "pointer",
-      width: full ? "100%" : "auto",
-    }
-  }, text);
-};
+function mkCreate(){
+  const w=el("div",null,mkDots(state.step,3));
+  const d=state.form,cfg=d.type?TYPES[d.type]:{color:C.accent};
+  const bldPr=()=>{const h=`البودكاست: "${d.name}" | النوع: ${TYPES[d.type].label} | المدة: ${d.duration} | النشر: ${d.frequency}${stBlk()}\n\n`;if(d.type==="solo")return h+`الموضوع: ${d.topic}\n\nاكتب سكريبت كامل جاهز للتسجيل مباشرةً:\n١- مقدمة جذابة كاملة\n٢- عرض الموضوع بتفصيل مع انتقالات طبيعية\n٣- تعمق في كل نقطة مع أمثلة وقصص\n٤- خاتمة قوية مع call to action\nضع [توقف] عند الانتقالات. الطول يتناسب مع ${d.duration}.`;if(d.type==="group"){const n=d.hostCount||2,nm=["م١","م٢","م٣","م٤","م٥"].slice(0,n).join("، ");return h+`الموضوع: ${d.topic}\nعدد المذيعين: ${n}\n\nاكتب سكريبت حوار جماعي كامل موزع على (${nm}). كل جملة مكتوبة. يشمل مقدمة وحوار متدفق وخاتمة. الطول يتناسب مع ${d.duration}.`;}return h+`الضيف/الموضوع: ${d.topic}\n\nاكتب قائمة أسئلة احترافية:\n١- ٣ أسئلة تمهيدية\n٢- ٦–٨ أسئلة جوهرية متدرجة\n٣- ٣ أسئلة استفزازية\n٤- سؤال ختامي مميز\nلكل سؤال: السؤال كاملاً + هدفه.`;};
 
-const mkCard = (children, extraStyle={}) =>
-  el("div", { style:{ background:C.card, border:`1px solid ${C.border}`, borderRadius:"12px", padding:"22px", ...extraStyle } }, ...children);
+  if(state.step===0){w.append(el("div",{style:{marginBottom:"22px"}},el("div",{style:{fontSize:"19px",fontWeight:"700",color:C.text,marginBottom:"4px"}},"◎ هوية البودكاست"),el("div",{style:{color:C.muted,fontSize:"13px"}},"ابدأ بتحديد اسم البودكاست وطبيعته")),el("div",{style:{marginBottom:"16px"}},mkLbl("اسم البودكاست"),mkInput(d.name,v=>setState({form:{...d,name:v}}),"مثال: بودكاست مدى، صوت العقل...")),mkLbl("نوع البودكاست"),el("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px",marginBottom:"24px"}},...Object.entries(TYPES).map(([k,t])=>{const sl=d.type===k;return el("div",{onClick:()=>setState({form:{...d,type:k}}),style:{border:`2px solid ${sl?t.color:C.border}`,borderRadius:"10px",padding:"14px 10px",cursor:"pointer",background:sl?`${t.color}12`:C.bg,transition:"all 0.2s",textAlign:"center"}},el("div",{style:{fontSize:"20px",marginBottom:"5px"}},t.icon),el("div",{style:{fontWeight:"700",fontSize:"13px",color:sl?t.color:C.text,marginBottom:"3px"}},t.label),el("div",{style:{fontSize:"11px",color:C.muted,lineHeight:"1.5"}},t.desc));})),el("div",{style:{textAlign:"left"}},mkBtn("التالي ←",()=>setState({step:1}),{accent:true,disabled:!d.name||!d.type})));}
 
-const mkBadge = type => {
-  const t = TYPES[type];
-  return el("span", { style:{ fontSize:"12px", fontWeight:"700", padding:"2px 9px", borderRadius:"5px",
-    background:`${t.color}20`, border:`1px solid ${t.color}`, color:t.color } }, `${t.icon} ${t.label}`);
-};
+  if(state.step===1){w.append(el("div",{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"18px"}},mkBadge(d.type),el("span",{style:{fontWeight:"700",color:C.text}},d.name)),el("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"14px"}},el("div",null,mkLbl("مدة الحلقة"),mkSelect(d.duration,v=>setState({form:{...d,duration:v}}),DURS,"اختر المدة")),el("div",null,mkLbl("تكرار النشر"),mkSelect(d.frequency,v=>setState({form:{...d,frequency:v}}),FREQS,"كم مرة؟"))));if(d.type==="group")w.append(el("div",{style:{marginBottom:"14px"}},mkLbl("عدد المذيعين"),el("div",{style:{display:"flex",gap:"8px"}},...[2,3,4,5].map(n=>el("div",{onClick:()=>setState({form:{...d,hostCount:n}}),style:{border:`2px solid ${d.hostCount===n?cfg.color:C.border}`,borderRadius:"8px",padding:"8px 14px",cursor:"pointer",fontWeight:"700",color:d.hostCount===n?cfg.color:C.muted,background:d.hostCount===n?`${cfg.color}15`:"transparent"}},""+n)))));w.append(el("div",{style:{marginBottom:"20px"}},mkLbl(d.type==="solo"?"الموضوع أو الفكرة الكاملة":d.type==="group"?"موضوع النقاش وأبرز المحاور":"موضوع الحلقة وتفاصيل الضيف"),mkTextarea(d.topic,v=>setState({form:{...d,topic:v}}),d.type==="solo"?"اكتب الفكرة بشكل موسع...":d.type==="group"?"ما الموضوع الذي ستناقشونه؟":"من الضيف؟ وما المحور؟",5)),el("div",{style:{display:"flex",justifyContent:"space-between"}},mkBtn("← رجوع",()=>setState({step:0}),{outline:true}),mkBtn("توليد السكريبت ←",()=>setState({step:2}),{accent:true,disabled:!d.duration||!d.frequency||!d.topic})));}
 
-const mkSpinner = () => {
-  const d = el("div", { style:{ width:"32px", height:"32px", border:`3px solid ${C.border}`,
-    borderTop:`3px solid ${C.accent}`, borderRadius:"50%", animation:"spin 0.8s linear infinite", margin:"0 auto 12px" } });
-  return el("div", { style:{ textAlign:"center", padding:"36px 0" } }, d,
-    el("div", { style:{ color:C.muted, fontSize:"13px" } }, "جارٍ التوليد..."));
-};
-
-const mkStepDots = (cur, tot) =>
-  el("div", { style:{ display:"flex", gap:"5px", justifyContent:"center", marginBottom:"28px" } },
-    ...Array.from({length:tot}, (_,i) =>
-      el("div", { style:{ width: i===cur?"22px":"7px", height:"7px", borderRadius:"4px",
-        background: i===cur?C.accent:i<cur?C.accentDim:C.border, transition:"all 0.3s" } })
-    )
-  );
-
-const mkLabel = text => el("div", { style:{ fontSize:"11px", letterSpacing:"0.12em",
-  color:C.muted, textTransform:"uppercase", marginBottom:"8px" } }, text);
-
-const mkOutBox = (text, onCopy, copied, maxH="380px") =>
-  el("div", null,
-    el("div", { style:{ display:"flex", justifyContent:"flex-end", marginBottom:"6px" } },
-      mkBtn(copied ? "✓ تم النسخ" : "نسخ", onCopy, { outline:true, small:true })
-    ),
-    el("div", { style:{ background:C.bg, border:`1px solid ${C.border}`, borderRadius:"10px",
-      padding:"18px", color:C.text, fontSize:"13px", lineHeight:"2", direction:"rtl",
-      whiteSpace:"pre-wrap", maxHeight:maxH, overflowY:"auto" } }, text)
-  );
-
-const mkNextBanner = (msg, sub, btnLabel, onClick, color=C.accent) =>
-  el("div", { style:{ marginTop:"14px", padding:"12px 16px", borderRadius:"10px",
-    background:`${color}18`, border:`1px solid ${color}40`,
-    display:"flex", alignItems:"center", justifyContent:"space-between" } },
-    el("div", null,
-      el("div", { style:{ color, fontWeight:"700", fontSize:"13px", marginBottom:"2px" } }, "✓ " + msg),
-      el("div", { style:{ color:C.muted, fontSize:"11px" } }, sub)
-    ),
-    mkBtn(btnLabel + " ←", onClick, { accent:true, small:true, color })
-  );
-
-// ─── NAV ──────────────────────────────────────────────────────────────────────
-const mkNav = () => {
-  const tabs = [{id:"create",label:"إنشاء"},{id:"production",label:"الإنتاج"},
-    {id:"marketing",label:"التسويق"},{id:"episodes",label:"حلقاتي"}];
-  return el("div", { style:{ display:"flex", gap:"3px", background:C.surface,
-    border:`1px solid ${C.border}`, borderRadius:"10px", padding:"4px", marginBottom:"20px" } },
-    ...tabs.map(t =>
-      el("button", {
-        onClick: () => setState({ tab: t.id }),
-        style: {
-          flex:"1", background: state.tab===t.id ? C.accent : "transparent",
-          border:"none", borderRadius:"7px", padding:"8px 4px",
-          color: state.tab===t.id ? "#0a0a0f" : C.muted,
-          fontWeight:"700", fontSize:"12px",
-        }
-      }, t.label)
-    )
-  );
-};
-
-// ─── API KEY MODAL ────────────────────────────────────────────────────────────
-const mkApiKeyModal = () => {
-  const overlay = el("div", { style:{ position:"fixed", inset:"0", background:"rgba(0,0,0,0.7)",
-    display:"flex", alignItems:"center", justifyContent:"center", zIndex:"9999", padding:"16px" } });
-
-  const modal = el("div", { style:{ background:C.surface, border:`1px solid ${C.border}`,
-    borderRadius:"14px", width:"100%", maxWidth:"480px", padding:"28px" } });
-
-  const title = el("div", { style:{ fontSize:"18px", fontWeight:"700", color:C.text, marginBottom:"6px" } }, "🔑 API Key");
-  const sub = el("div", { style:{ color:C.muted, fontSize:"13px", marginBottom:"20px", lineHeight:"1.7" } },
-    "للحصول على API Key: اذهب إلى ",
-    el("a", { href:"https://console.anthropic.com/", target:"_blank",
-      style:{ color:C.accent } }, "console.anthropic.com"),
-    " ← API Keys ← Create Key"
-  );
-
-  const inputEl = mkInput(state.apiKeyInput,
-    v => setState({ apiKeyInput: v }),
-    "sk-ant-...",
-    { fontFamily:"monospace", fontSize:"13px" }
-  );
-
-  const note = el("div", { style:{ color:C.dim, fontSize:"11px", marginTop:"10px", marginBottom:"20px" } },
-    "يُحفظ الـ Key في المتصفح فقط ولا يُرسل لأي جهة غير Anthropic"
-  );
-
-  const saveBtn = mkBtn("حفظ والبدء", () => {
-    const k = state.apiKeyInput.trim();
-    if (!k) return;
-    localStorage.setItem(API_KEY_STORAGE, k);
-    setState({ showApiKey: false });
-  }, { accent:true });
-
-  modal.append(title, sub, inputEl, note, saveBtn);
-  overlay.appendChild(modal);
-  return overlay;
-};
-
-// ─── STYLE MODAL ──────────────────────────────────────────────────────────────
-const mkStyleModal = () => {
-  const overlay = el("div", { style:{ position:"fixed", inset:"0", background:"rgba(0,0,0,0.75)",
-    display:"flex", alignItems:"center", justifyContent:"center", zIndex:"9999", padding:"16px" } });
-
-  const modal = el("div", { style:{ background:C.surface, border:`1px solid ${C.border}`,
-    borderRadius:"14px", width:"100%", maxWidth:"540px", maxHeight:"88vh", overflowY:"auto", padding:"26px" } });
-
-  const hdr = el("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"18px" } },
-    el("div", null,
-      el("div", { style:{ fontSize:"17px", fontWeight:"700", color:C.text } }, "✦ ملف أسلوبي"),
-      el("div", { style:{ color:C.muted, fontSize:"12px", marginTop:"3px" } }, "يُطبَّق في كل سكريبت تولّده الأداة")
-    ),
-    el("button", { onClick:()=>setState({showStyle:false}),
-      style:{ background:"none", border:"none", color:C.muted, fontSize:"20px" } }, "✕")
-  );
-
-  // Auto-analyze card
-  const analyzeCard = mkCard([
-    el("div", { style:{ fontSize:"12px", color:C.accent, fontWeight:"700", marginBottom:"8px" } }, "استخراج تلقائي من سكريبت سابق"),
-    mkTextarea(state.styleSample, v => setState({styleSample:v}), "الصق مقطعاً من حلقة سابقة...", 3),
-    el("div", { style:{ marginTop:"10px" } },
-      mkBtn(state.styleAnalyzing ? "جارٍ التحليل..." : "تحليل وملء تلقائي", async () => {
-        if (!state.styleSample.trim() || state.styleAnalyzing) return;
-        setState({ styleAnalyzing: true });
-        try {
-          const raw = await callClaude(
-            "أنت محلل أسلوب. ردودك JSON فقط بدون أي نص إضافي أو backticks.",
-            `حلّل هذا السكريبت وأجب بـ JSON فقط:\n{"tone":"النبرة","opening":"طريقة البداية","language":"نوع اللغة","structure":"بناء المحتوى","closing":"طريقة الختام","distinctive":"ما يميزه"}\n\nالسكريبت: ${state.styleSample}`,
-            600
-          );
-          const parsed = JSON.parse(raw.trim());
-          setState({ styleForm: { ...state.styleForm, ...parsed }, styleAnalyzing: false });
-        } catch(e) { setState({ styleAnalyzing: false }); }
-      }, { small:true, color:C.accent, accent:true, disabled: state.styleAnalyzing })
-    )
-  ], { marginBottom:"18px", borderColor:`${C.accent}40` });
-
-  const fields = [
-    { k:"tone",       l:"النبرة العامة",         p:"دافئ، تحليلي، حماسي..." },
-    { k:"opening",    l:"طريقة الافتتاح",         p:"سؤال تشويقي، قصة..." },
-    { k:"language",   l:"نوع اللغة",              p:"فصحى / خليجية / مزيج..." },
-    { k:"closing",    l:"طريقة الختام",           p:"سؤال للمتابعين، توصية..." },
-    { k:"distinctive",l:"بصمتك المميزة",          p:"ما يجعل أسلوبك مختلفاً..." },
-  ];
-
-  const fieldsGrid = el("div", { style:{ display:"grid", gap:"14px" } },
-    ...fields.map(f => el("div", null,
-      mkLabel(f.l),
-      mkInput(state.styleForm[f.k]||"", v => setState({ styleForm:{...state.styleForm,[f.k]:v} }), f.p)
-    )),
-    el("div", null,
-      mkLabel("بناء المحتوى وتدفقه"),
-      mkTextarea(state.styleForm.structure||"", v => setState({ styleForm:{...state.styleForm,structure:v} }), "كيف تنظم أفكارك...", 3)
-    )
-  );
-
-  const footer = el("div", { style:{ display:"flex", justifyContent:"space-between", marginTop:"20px" } },
-    mkBtn("إلغاء", () => setState({showStyle:false}), { outline:true }),
-    mkBtn(state.styleSaved ? "✓ تم الحفظ" : "حفظ الملف", () => {
-      localStorage.setItem(STYLE_KEY, JSON.stringify({...state.styleForm, ts:Date.now()}));
-      const s = state.styleForm;
-      setState({ styleSaved:true, showStyle:false, hasStyle:!!(s.tone||s.opening) });
-      setTimeout(() => setState({ styleSaved:false }), 1500);
-    }, { accent:true, disabled:!(state.styleForm.tone||state.styleForm.opening) })
-  );
-
-  modal.append(hdr, analyzeCard, fieldsGrid, footer);
-  overlay.appendChild(modal);
-  return overlay;
-};
-
-// ─── CREATE SCREEN ────────────────────────────────────────────────────────────
-const mkCreateScreen = () => {
-  const s = state;
-
-  const styleBlock = () => {
-    const st = getStyle();
-    if (!Object.keys(st).length) return "";
-    const lines = [st.tone&&"النبرة: "+st.tone, st.opening&&"الافتتاح: "+st.opening,
-      st.language&&"اللغة: "+st.language, st.structure&&"البناء: "+st.structure,
-      st.closing&&"الختام: "+st.closing, st.distinctive&&"البصمة: "+st.distinctive].filter(Boolean);
-    return lines.length ? "\n\n--- أسلوب المذيع — التزم به ---\n"+lines.join("\n")+"\n--------------------------------" : "";
-  };
-
-  const buildPrompt = () => {
-    const d = s.form;
-    const hdr = `البودكاست: "${d.name}" | النوع: ${TYPES[d.type].label} | المدة: ${d.duration} | النشر: ${d.frequency}${styleBlock()}\n\n`;
-    if (d.type==="solo")
-      return hdr+`الموضوع: ${d.topic}\n\nاكتب سكريبت كامل جاهز للتسجيل مباشرةً. يشمل:\n١- مقدمة جذابة كاملة (تشويق + ترحيب + تعريف بالموضوع)\n٢- عرض الموضوع بتفصيل مع انتقالات طبيعية\n٣- تعمق في كل نقطة مع أمثلة وقصص\n٤- خاتمة قوية مع call to action\nضع [توقف] عند الانتقالات. الطول يتناسب مع ${d.duration}.`;
-    if (d.type==="group") {
-      const n = d.hostCount||2;
-      const names = ["م١","م٢","م٣","م٤","م٥"].slice(0,n).join("، ");
-      return hdr+`الموضوع: ${d.topic}\nعدد المذيعين: ${n}\n\nاكتب سكريبت حوار جماعي كامل موزع على (${names}). كل جملة مكتوبة كاملاً. يشمل مقدمة، حوار متدفق، نقاط توافق وخلاف، خاتمة مشتركة. الطول يتناسب مع ${d.duration}.`;
-    }
-    return hdr+`الضيف/الموضوع: ${s.form.topic}\n\nاكتب قائمة أسئلة احترافية:\n١- ٣ أسئلة تمهيدية\n٢- ٦–٨ أسئلة جوهرية متدرجة من السطحي للعمق\n٣- ٣ أسئلة استفزازية تفتح نقاشاً حقيقياً\n٤- سؤال ختامي مميز\nلكل سؤال: السؤال كاملاً + هدفه + أسئلة متابعة محتملة.`;
-  };
-
-  const generate = async () => {
-    setState({ scriptLoading:true, script:"" });
-    try {
-      const text = await callClaude(
-        "أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.",
-        buildPrompt()
-      );
-      const ep = { id: Date.now()+"", name:s.form.name, type:s.form.type, duration:s.form.duration,
-        frequency:s.form.frequency, topic:s.form.topic, script:text, createdAt:new Date().toISOString() };
-      saveEp(ep);
-      setState({ script:text, scriptLoading:false, episode:ep, episodes:getEps() });
-    } catch(e) {
-      setState({ script:"خطأ: "+e.message, scriptLoading:false });
-    }
-  };
-
-  const wrap = el("div", null, mkStepDots(s.step, 3));
-
-  // STEP 0
-  if (s.step === 0) {
-    const typeCards = el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px", marginBottom:"24px" } },
-      ...Object.entries(TYPES).map(([k, t]) => {
-        const sel = s.form.type === k;
-        const card = el("div", {
-          onClick: () => setState({ form:{...s.form, type:k} }),
-          style: { border:`2px solid ${sel?t.color:C.border}`, borderRadius:"10px",
-            padding:"14px 10px", cursor:"pointer", background:sel?`${t.color}12`:C.bg,
-            transition:"all 0.2s", textAlign:"center" }
-        },
-          el("div", { style:{ fontSize:"22px", marginBottom:"5px" } }, t.icon),
-          el("div", { style:{ fontWeight:"700", fontSize:"13px", color:sel?t.color:C.text, marginBottom:"3px" } }, t.label),
-          el("div", { style:{ fontSize:"11px", color:C.muted, lineHeight:"1.5" } }, t.desc)
-        );
-        return card;
-      })
-    );
-
-    wrap.append(
-      el("div", { style:{ marginBottom:"22px" } },
-        el("div", { style:{ fontSize:"19px", fontWeight:"700", color:C.text, marginBottom:"4px" } }, "◎ هوية البودكاست"),
-        el("div", { style:{ color:C.muted, fontSize:"13px" } }, "ابدأ بتحديد اسم البودكاست وطبيعته")
-      ),
-      el("div", { style:{ marginBottom:"16px" } },
-        mkLabel("اسم البودكاست"),
-        mkInput(s.form.name, v => setState({ form:{...s.form,name:v} }), "مثال: بودكاست مدى، صوت العقل...")
-      ),
-      mkLabel("نوع البودكاست"),
-      typeCards,
-      el("div", { style:{ textAlign:"left" } },
-        mkBtn("التالي ←", () => setState({step:1}), { accent:true, disabled:!s.form.name||!s.form.type })
-      )
-    );
+  if(state.step===2){
+    w.append(el("div",{style:{display:"flex",alignItems:"center",gap:"10px",marginBottom:"5px"}},mkBadge(d.type),el("span",{style:{fontWeight:"700",color:C.text,fontSize:"15px"}},d.name)),el("div",{style:{color:C.muted,fontSize:"12px",marginBottom:"18px"}},d.duration+" · "+d.frequency));
+    if(!state.script&&!state.scriptLoading)w.append(mkCard([el("div",{style:{fontSize:"28px",marginBottom:"10px",textAlign:"center"}},d.type==="solo"?"✦":d.type==="group"?"⬡":"◈"),el("div",{style:{fontWeight:"700",fontSize:"14px",color:C.text,marginBottom:"5px",textAlign:"center"}},"جاهز لتوليد "+(d.type==="solo"?"السكريبت":d.type==="group"?"سكريبت الحوار":"أسئلة الحلقة")),el("div",{style:{color:C.muted,fontSize:"12px",marginBottom:"22px",textAlign:"center"}},Object.keys(getStyle()).length?"سيتم الكتابة بأسلوبك الشخصي":"سيتم التوليد بناءً على معلوماتك"),el("div",{style:{textAlign:"center"}},mkBtn("توليد المحتوى",async()=>{setState({scriptLoading:true,script:""});try{const t=await callClaude("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به. ردودك بالعربية.",bldPr());const ep={id:Date.now()+"",name:d.name,type:d.type,duration:d.duration,frequency:d.frequency,topic:d.topic,hostCount:d.hostCount,script:t,createdAt:new Date().toISOString()};saveEp(ep);setState({script:t,scriptLoading:false,episode:ep,episodes:getEps()});}catch(e){setState({script:"خطأ: "+e.message,scriptLoading:false});}},{accent:true,color:cfg.color}))],{textAlign:"center"}));
+    if(state.scriptLoading)w.append(mkSpinner());
+    if(state.script&&!state.scriptLoading){w.append(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}},mkLbl("السكريبت المولّد"),mkCopy(state.script)),mkOut(state.script),el("div",{style:{display:"flex",gap:"8px",marginTop:"10px",justifyContent:"flex-end"}},mkBtn("إعادة التوليد",async()=>{setState({scriptLoading:true,script:""});try{const t=await callClaude("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة. ردودك بالعربية.",bldPr());setState({script:t,scriptLoading:false});}catch(e){setState({script:"خطأ: "+e.message,scriptLoading:false});}})),mkNext("السكريبت جاهز","الخطوة التالية: نصائح الإنتاج","الإنتاج",()=>setState({tab:"production"})));}
+    w.append(el("div",{style:{display:"flex",justifyContent:"space-between",marginTop:"14px"}},mkBtn("← رجوع",()=>setState({step:1}),{outline:true}),mkBtn("حلقة جديدة",()=>setState({step:0,form:{name:"",type:"",duration:"",frequency:"",topic:"",hostCount:2},script:""}),{outline:true})));
   }
+  return w;
+}
 
-  // STEP 1
-  if (s.step === 1) {
-    const cfg = TYPES[s.form.type];
-    wrap.append(
-      el("div", { style:{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"20px" } },
-        mkBadge(s.form.type),
-        el("span", { style:{ fontWeight:"700", color:C.text } }, s.form.name)
-      ),
-      el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" } },
-        el("div", null, mkLabel("مدة الحلقة"), mkSelect(s.form.duration, v=>setState({form:{...s.form,duration:v}}), DURS, "اختر المدة")),
-        el("div", null, mkLabel("تكرار النشر"), mkSelect(s.form.frequency, v=>setState({form:{...s.form,frequency:v}}), FREQS, "كم مرة؟"))
-      ),
-      ...(s.form.type==="group" ? [
-        el("div", { style:{ marginBottom:"14px" } },
-          mkLabel("عدد المذيعين"),
-          el("div", { style:{ display:"flex", gap:"8px" } },
-            ...[2,3,4,5].map(n =>
-              el("div", {
-                onClick:()=>setState({form:{...s.form,hostCount:n}}),
-                style:{ border:`2px solid ${s.form.hostCount===n?cfg.color:C.border}`, borderRadius:"8px",
-                  padding:"8px 14px", cursor:"pointer", fontWeight:"700",
-                  color:s.form.hostCount===n?cfg.color:C.muted,
-                  background:s.form.hostCount===n?`${cfg.color}15`:"transparent" }
-              }, ""+n)
-            )
-          )
-        )
-      ] : []),
-      el("div", { style:{ marginBottom:"20px" } },
-        mkLabel(s.form.type==="solo"?"الموضوع أو الفكرة الكاملة":s.form.type==="group"?"موضوع النقاش وأبرز المحاور":"موضوع الحلقة وتفاصيل الضيف"),
-        mkTextarea(s.form.topic, v=>setState({form:{...s.form,topic:v}}),
-          s.form.type==="solo"?"اكتب الفكرة بشكل موسع...":s.form.type==="group"?"ما الموضوع الذي ستناقشونه؟":"من الضيف؟ وما المحور؟", 5)
-      ),
-      el("div", { style:{ display:"flex", justifyContent:"space-between" } },
-        mkBtn("← رجوع", ()=>setState({step:0}), { outline:true }),
-        mkBtn("توليد السكريبت ←", ()=>setState({step:2}), { accent:true, disabled:!s.form.duration||!s.form.frequency||!s.form.topic })
-      )
-    );
-  }
+function mkProd(){
+  const s=state;
+  const w=el("div",null,el("div",{style:{marginBottom:"20px"}},el("div",{style:{fontSize:"19px",fontWeight:"700",color:C.text,marginBottom:"4px"}},"◉ نصائح الإنتاج"),el("div",{style:{color:C.muted,fontSize:"13px"}},"اختر نوع الاستوديو للحصول على توصيات مخصصة")));
+  if(!s.episode)w.append(mkCard([el("div",{style:{color:C.muted,fontSize:"14px",textAlign:"center"}},'أنشئ حلقة أولاً من صفحة "إنشاء"')],{marginBottom:"16px"}));
+  w.append(mkLbl("نوع الاستوديو"),el("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"16px"}},...[{id:"audio",ic:"🎙️",l:"صوتي فقط",d:"ميكروفون وتسجيل صوتي"},{id:"video",ic:"🎥",l:"مصوَّر",d:"كاميرا وإضاءة ومونتاج"}].map(f=>el("div",{onClick:()=>setState({prodFormat:f.id}),style:{border:`2px solid ${s.prodFormat===f.id?C.accent:C.border}`,borderRadius:"10px",padding:"16px",cursor:"pointer",background:s.prodFormat===f.id?C.accentGlow:C.bg,transition:"all 0.2s",textAlign:"center"}},el("div",{style:{fontSize:"24px",marginBottom:"6px"}},f.ic),el("div",{style:{fontWeight:"700",fontSize:"13px",marginBottom:"3px",color:s.prodFormat===f.id?C.accent:C.text}},f.l),el("div",{style:{fontSize:"11px",color:C.muted}},f.d)))),mkBtn(s.prodLoading?"جارٍ التوليد...":"توليد نصائح الإنتاج",async()=>{if(!s.prodFormat||s.prodLoading)return;setState({prodLoading:true,prodResult:""});const ep=s.episode,t=ep?.type||"solo",isA=s.prodFormat==="audio";const pr=isA?`البودكاست: ${ep?.name||"—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${ep?.topic||"—"}\n\nأعطِ نصائح مفصّلة للتسجيل الصوتي:\n\n🎙️ وضع الميكروفون: المسافة المثالية بالسنتيمترات والزاوية. الفرق بين الديناميكي والكوندنسر.\n\n📍 المكان: خصائص الغرفة المثالية. طرق عزل الصوت منخفضة التكلفة.\n\n🎚️ التحرير: برامج موصى بها. إعدادات EQ والضغط.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب لهذا البودكاست. مواقع مجانية. توقيت الاستخدام.`:`البودكاست: ${ep?.name||"—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${ep?.topic||"—"}\n\nأعطِ نصائح مفصّلة لتصوير هذا البودكاست (${t==="solo"?"مذيع فردي":t==="group"?(ep?.hostCount||2)+" مذيعين":"مذيع وضيف"}):\n\n📷 الكاميرات: عدد الكاميرات وزوايا كل منها. المسافة البؤرية. إعدادات التعرض.\n\n💡 الإضاءة: مخطط Key/Fill/Back. درجات الحرارة بـ Kelvin.\n\n🎨 الديكور: اقتراحات تتناسب مع موضوع البودكاست.\n\n✂️ المونتاج: برامج مقترحة. إعدادات التصدير.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب. توقيت استخدامها.`;try{const txt=await callClaude("أنت خبير إنتاج بودكاست عربي. أجب بالعربية بشكل مفصّل وعملي.",pr);setState({prodResult:txt,prodLoading:false});}catch(e){setState({prodResult:"خطأ: "+e.message,prodLoading:false});}},{accent:true,full:true,disabled:!s.prodFormat||s.prodLoading}));
+  if(s.prodLoading)w.append(mkSpinner());
+  if(s.prodResult&&!s.prodLoading)w.append(el("div",{style:{marginTop:"16px"}},el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}},mkLbl("توصيات الإنتاج"),mkCopy(s.prodResult)),mkOut(s.prodResult),mkNext("نصائح الإنتاج جاهزة","الخطوة التالية: التسويق والنشر","التسويق",()=>setState({tab:"marketing"}))));
+  return w;
+}
 
-  // STEP 2
-  if (s.step === 2) {
-    wrap.append(
-      el("div", { style:{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"5px" } },
-        mkBadge(s.form.type),
-        el("span", { style:{ fontWeight:"700", color:C.text, fontSize:"15px" } }, s.form.name)
-      ),
-      el("div", { style:{ color:C.muted, fontSize:"12px", marginBottom:"18px" } }, s.form.duration+" · "+s.form.frequency)
-    );
+function mkMkt(){
+  const s=state;
+  const MTS=[{id:"description",l:"وصف الحلقة"},{id:"social",l:"السوشيال"},{id:"email",l:"نشرة بريدية"},{id:"titles",l:"عناوين بديلة"}];
+  const gen=async t=>{if(!s.episode)return;setState({mktLoading:t});const ep=s.episode,b=`البودكاست: "${ep.name}" | النوع: ${TYPES[ep.type]?.label}\nالموضوع: ${ep.topic}\n${s.mktLink?"رابط الحلقة: "+s.mktLink:""}\n\n`;const ps={description:b+"اكتب وصفاً احترافياً للحلقة لـ Spotify وAnghami وApple Podcasts:\n- ٣–٥ فقرات\n- جملة تشويقية قوية\n- ما سيستفيده المستمع\n- كلمات مفتاحية\n- دعوة للاشتراك",social:b+"اكتب محتوى السوشيال:\n١. تغريدة X (أقل من 280 حرف)\n٢. منشور انستقرام مع هاشتاقات\n٣. منشور لينكدإن\n٤. اقتباس للتصميم الجرافيكي",email:b+"اكتب نشرة بريدية:\n- سطر موضوع جذاب\n- مقدمة ترحيب\n- ملخص ٣ نقاط\n- أبرز اقتباس\n- رابط للاستماع\n- خاتمة ودية",titles:b+"اقترح ١٠ عناوين بديلة:\n- ٣ تثير الفضول\n- ٣ تركز على الفائدة\n- ٢ تستخدم الأرقام\n- ٢ قصيرة ومباشرة\nلكل عنوان: سبب اختياره."};try{const txt=await callClaude("أنت خبير تسويق بودكاست عربي. ردودك بالعربية.",ps[t]);setState({mktOutputs:{...s.mktOutputs,[t]:txt},mktLoading:""});}catch(e){setState({mktOutputs:{...s.mktOutputs,[t]:"خطأ: "+e.message},mktLoading:""});}};
+  const w=el("div",null,el("div",{style:{marginBottom:"18px"}},el("div",{style:{fontSize:"19px",fontWeight:"700",color:C.text,marginBottom:"4px"}},"◐ التسويق والنشر"),el("div",{style:{color:C.muted,fontSize:"13px"}},"توليد محتوى تسويقي جاهز لكل المنصات")),el("div",{style:{marginBottom:"14px"}},mkLbl("رابط الحلقة (اختياري)"),mkInput(s.mktLink,v=>setState({mktLink:v}),"https://open.spotify.com/episode/...")));
+  if(!s.episode)w.append(mkCard([el("div",{style:{color:C.muted,fontSize:"14px",textAlign:"center"}},'أنشئ حلقة أولاً من صفحة "إنشاء"')],{marginBottom:"14px"}));
+  w.append(el("div",{style:{display:"flex",gap:"3px",background:C.bg,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"3px",marginBottom:"14px"}},...MTS.map(t=>el("button",{onClick:()=>setState({mktTab:t.id}),style:{flex:"1",background:s.mktTab===t.id?C.surface:"transparent",border:s.mktTab===t.id?`1px solid ${C.border}`:"1px solid transparent",borderRadius:"6px",padding:"7px 4px",color:s.mktTab===t.id?C.text:C.muted,fontWeight:"600",fontSize:"11px",whiteSpace:"nowrap"}},t.l))),mkBtn(s.mktLoading===s.mktTab?"جارٍ التوليد...":"توليد "+MTS.find(t=>t.id===s.mktTab)?.l,()=>gen(s.mktTab),{accent:true,full:true,disabled:!s.episode||!!s.mktLoading}));
+  if(s.mktLoading===s.mktTab)w.append(mkSpinner());
+  if(s.mktOutputs[s.mktTab]&&s.mktLoading!==s.mktTab)w.append(el("div",{style:{marginTop:"14px"}},el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"8px"}},mkLbl(MTS.find(t=>t.id===s.mktTab)?.l),mkCopy(s.mktOutputs[s.mktTab])),mkOut(s.mktOutputs[s.mktTab])));
+  w.append(el("div",{style:{marginTop:"18px",borderTop:`1px solid ${C.border}`,paddingTop:"16px"}},el("div",{style:{fontSize:"12px",color:C.muted,marginBottom:"10px"}},"حفظ كل محتوى الحلقة في ملف واحد"),mkBtn("⬇ تنزيل ملف الحلقة",()=>{if(!s.episode)return;const ep=s.episode,c=["# "+ep.name,"**الموضوع:** "+ep.topic,"**النوع:** "+TYPES[ep.type]?.label,"**المدة:** "+ep.duration,s.mktLink?"**رابط:** "+s.mktLink:"","---","","## السكريبت",ep.script||"—","",s.mktOutputs.description?"## الوصف\n"+s.mktOutputs.description:"",s.mktOutputs.social?"## السوشيال\n"+s.mktOutputs.social:"",s.mktOutputs.email?"## النشرة\n"+s.mktOutputs.email:"",s.mktOutputs.titles?"## العناوين البديلة\n"+s.mktOutputs.titles:""].filter(Boolean).join("\n");const bl=new Blob([c],{type:"text/plain;charset=utf-8"}),url=URL.createObjectURL(bl),a=document.createElement("a");a.href=url;a.download=(ep.name||"podcast")+".md";a.click();URL.revokeObjectURL(url);setState({mktDlDone:true});},{outline:true,full:true,disabled:!s.episode}),s.mktDlDone?mkNext("الحلقة مكتملة","شاهد جميع حلقاتك المحفوظة","حلقاتي",()=>setState({tab:"episodes"}),C.ok):null));
+  return w;
+}
 
-    if (!s.script && !s.scriptLoading) {
-      wrap.append(mkCard([
-        el("div", { style:{ fontSize:"32px", marginBottom:"10px", textAlign:"center" } }, s.form.type==="solo"?"✦":s.form.type==="group"?"⬡":"◈"),
-        el("div", { style:{ fontWeight:"700", fontSize:"14px", color:C.text, marginBottom:"5px", textAlign:"center" } },
-          "جاهز لتوليد "+(s.form.type==="solo"?"السكريبت":s.form.type==="group"?"سكريبت الحوار":"أسئلة الحلقة")),
-        el("div", { style:{ color:C.muted, fontSize:"12px", marginBottom:"20px", textAlign:"center" } },
-          Object.keys(getStyle()).length?"سيتم الكتابة بأسلوبك الشخصي":"سيتم التوليد بناءً على معلوماتك"),
-        el("div", { style:{ textAlign:"center" } }, mkBtn("توليد المحتوى", generate, { accent:true }))
-      ], { textAlign:"center" }));
-    }
+function mkEps(){
+  const eps=state.episodes;
+  const w=el("div",null,el("div",{style:{marginBottom:"18px"}},el("div",{style:{fontSize:"19px",fontWeight:"700",color:C.text,marginBottom:"4px"}},"▦ حلقاتي"),el("div",{style:{color:C.muted,fontSize:"13px"}},eps.length+" حلقة محفوظة")));
+  if(!eps.length){w.append(mkCard([el("div",{style:{fontSize:"26px",marginBottom:"10px",textAlign:"center"}},"◌"),el("div",{style:{color:C.muted,fontSize:"14px",textAlign:"center"}},'لا توجد حلقات — ابدأ من صفحة "إنشاء"')],{padding:"36px"}));return w;}
+  w.append(el("div",{style:{display:"grid",gap:"10px"}},...eps.map(ep=>mkCard([el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"7px"}},el("div",null,el("div",{style:{fontWeight:"700",color:C.text,fontSize:"14px",marginBottom:"4px"}},ep.name),el("div",{style:{display:"flex",gap:"7px",alignItems:"center"}},mkBadge(ep.type),el("span",{style:{color:C.muted,fontSize:"11px"}},ep.duration))),el("button",{onClick:()=>{const u=eps.filter(e=>e.id!==ep.id);localStorage.setItem(EPS_KEY,JSON.stringify(u));setState({episodes:u});},style:{background:"none",border:"none",color:C.dim,fontSize:"15px"}},"✕")),el("div",{style:{color:C.muted,fontSize:"12px",marginBottom:"9px",lineHeight:"1.5"}},(ep.topic||"").slice(0,90)+((ep.topic||"").length>90?"...":"")),el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},el("span",{style:{fontSize:"11px",color:C.dim}},new Date(ep.createdAt).toLocaleDateString("ar-SA")),mkBtn("تحميل",()=>setState({episode:ep,tab:"create",step:2,script:ep.script,form:{name:ep.name,type:ep.type,duration:ep.duration,frequency:ep.frequency,topic:ep.topic,hostCount:ep.hostCount||2}}),{accent:true,small:true}))],{padding:"16px"}))));
+  return w;
+}
 
-    if (s.scriptLoading) wrap.append(mkSpinner());
-
-    if (s.script && !s.scriptLoading) {
-      wrap.append(
-        mkLabel("السكريبت المولّد"),
-        mkOutBox(s.script, () => {
-          navigator.clipboard.writeText(s.script);
-          setState({scriptCopied:true}); setTimeout(()=>setState({scriptCopied:false}),2000);
-        }, s.scriptCopied),
-        el("div", { style:{ display:"flex", gap:"8px", marginTop:"10px", justifyContent:"flex-end" } },
-          mkBtn("إعادة التوليد", generate, { outline:true, small:true })
-        ),
-        mkNextBanner("السكريبت جاهز", "الخطوة التالية: نصائح الإنتاج", "الإنتاج", ()=>setState({tab:"production"}))
-      );
-    }
-
-    wrap.append(
-      el("div", { style:{ display:"flex", justifyContent:"space-between", marginTop:"14px" } },
-        mkBtn("← رجوع", ()=>setState({step:1}), { outline:true }),
-        mkBtn("حلقة جديدة", ()=>setState({step:0,form:{name:"",type:"",duration:"",frequency:"",topic:"",hostCount:2},script:""}), { outline:true })
-      )
-    );
-  }
-
-  return wrap;
-};
-
-// ─── PRODUCTION SCREEN ────────────────────────────────────────────────────────
-const mkProductionScreen = () => {
-  const s = state;
-  const wrap = el("div", null,
-    el("div", { style:{ marginBottom:"22px" } },
-      el("div", { style:{ fontSize:"19px", fontWeight:"700", color:C.text, marginBottom:"4px" } }, "◉ نصائح الإنتاج"),
-      el("div", { style:{ color:C.muted, fontSize:"13px" } }, "اختر نوع الاستوديو للحصول على توصيات مخصصة")
-    )
-  );
-
-  if (!s.episode) {
-    wrap.append(mkCard([el("div",{style:{color:C.muted,fontSize:"14px",textAlign:"center"}},'أنشئ حلقة أولاً من صفحة "إنشاء"')], {marginBottom:"16px"}));
-  }
-
-  wrap.append(
-    mkLabel("نوع الاستوديو"),
-    el("div", { style:{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginBottom:"18px" } },
-      ...[{id:"audio",icon:"🎙️",label:"صوتي فقط",desc:"ميكروفون وتسجيل صوتي"},
-          {id:"video",icon:"🎥",label:"مصوَّر",desc:"كاميرا وإضاءة ومونتاج"}].map(f =>
-        el("div", {
-          onClick:()=>setState({prodFormat:f.id}),
-          style:{ border:`2px solid ${s.prodFormat===f.id?C.accent:C.border}`, borderRadius:"10px",
-            padding:"18px", cursor:"pointer", background:s.prodFormat===f.id?C.accentGlow:C.bg,
-            transition:"all 0.2s", textAlign:"center" }
-        },
-          el("div",{style:{fontSize:"26px",marginBottom:"7px"}},f.icon),
-          el("div",{style:{fontWeight:"700",fontSize:"14px",marginBottom:"3px",color:s.prodFormat===f.id?C.accent:C.text}},f.label),
-          el("div",{style:{fontSize:"12px",color:C.muted}},f.desc)
-        )
-      )
-    ),
-    mkBtn(s.prodLoading?"جارٍ التوليد...":"توليد نصائح الإنتاج", async () => {
-      if (!s.prodFormat || s.prodLoading) return;
-      setState({ prodLoading:true, prodResult:"" });
-      const ep = s.episode;
-      const t = ep?.type||"solo";
-      const isAudio = s.prodFormat==="audio";
-      const prompt = isAudio
-        ? `البودكاست: ${ep?.name||"—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${ep?.topic||"—"}\n\nأعطِ نصائح احترافية ومفصّلة للتسجيل الصوتي:\n\n🎙️ وضع الميكروفون: المسافة المثالية بالسنتيمترات والزاوية، الفرق بين الديناميكي والكوندنسر.\n\n📍 المكان والمعالجة: خصائص الغرفة المثالية، طرق عزل الصوت منخفضة التكلفة، ما يجب تجنبه.\n\n🎚️ التحرير الصوتي: برامج موصى بها مجانية ومدفوعة، إعدادات EQ والضغط، إزالة الضوضاء والصمت.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب لهذا البودكاست تحديداً، مواقع مجانية بدون حقوق، كيفية الاستخدام مع أحجام صوت مقترحة.`
-        : `البودكاست: ${ep?.name||"—"} | النوع: ${TYPES[t]?.label} | الموضوع: ${ep?.topic||"—"}\n\nأعطِ نصائح احترافية للتصوير (${t==="solo"?"مذيع فردي":t==="group"?(ep?.hostCount||2)+" مذيعين":"مذيع وضيف"}):\n\n📷 الكاميرات: عدد الكاميرات وزوايا كل منها بالتفصيل، المسافة البؤرية، إعدادات التعرض.\n\n💡 الإضاءة: مخطط Key/Fill/Back، درجات الحرارة بـ Kelvin، بدائل منخفضة التكلفة.\n\n🎨 الديكور والخلفية: اقتراحات تتناسب مع موضوع البودكاست، ما يجب تجنبه.\n\n✂️ المونتاج: برامج مقترحة، ترانزيشن، إعدادات التصدير لكل منصة.\n\n🎵 الموسيقى المرافقة: نوع الموسيقى المناسب، توقيت استخدامها بصرياً.`;
-      try {
-        const text = await callClaude("أنت خبير إنتاج بودكاست عربي صوتياً ومرئياً. أجب بالعربية بشكل مفصّل وعملي.", prompt);
-        setState({ prodResult:text, prodLoading:false });
-      } catch(e) { setState({ prodResult:"خطأ: "+e.message, prodLoading:false }); }
-    }, { accent:true, full:true, disabled:!s.prodFormat||s.prodLoading })
-  );
-
-  if (s.prodLoading) wrap.append(mkSpinner());
-
-  if (s.prodResult && !s.prodLoading) {
-    wrap.append(
-      el("div",{style:{marginTop:"16px"}},
-        mkLabel("توصيات الإنتاج"),
-        mkOutBox(s.prodResult, ()=>{
-          navigator.clipboard.writeText(s.prodResult);
-          setState({prodCopied:true}); setTimeout(()=>setState({prodCopied:false}),2000);
-        }, s.prodCopied, "480px"),
-        mkNextBanner("نصائح الإنتاج جاهزة","الخطوة التالية: التسويق والنشر","التسويق",()=>setState({tab:"marketing"}))
-      )
-    );
-  }
-
-  return wrap;
-};
-
-// ─── MARKETING SCREEN ─────────────────────────────────────────────────────────
-const mkMarketingScreen = () => {
-  const s = state;
-  const TABS = [{id:"description",label:"وصف الحلقة"},{id:"social",label:"السوشيال"},
-    {id:"email",label:"نشرة بريدية"},{id:"titles",label:"عناوين بديلة"}];
-
-  const genMkt = async (tab) => {
-    if (!s.episode) return;
-    setState({ mktLoading:tab });
-    const ep = s.episode;
-    const base = `البودكاست: "${ep.name}" | النوع: ${TYPES[ep.type]?.label}\nالموضوع: ${ep.topic}\n${s.mktLink?"رابط الحلقة: "+s.mktLink:""}\n\n`;
-    const prompts = {
-      description: base+"اكتب وصفاً احترافياً للحلقة لـ Spotify وAnghami وApple Podcasts:\n- ٣–٥ فقرات\n- جملة تشويقية قوية أولاً\n- ما سيستفيده المستمع\n- كلمات مفتاحية مناسبة\n- دعوة للاشتراك والمتابعة",
-      social:       base+"اكتب محتوى السوشيال ميديا:\n١. تغريدة X (أقل من 280 حرف)\n٢. منشور انستقرام مع هاشتاقات (٥–١٠)\n٣. منشور لينكدإن احترافي\n٤. اقتباس مميز للتصميم الجرافيكي\n\nكل منصة جاهزة للنسخ والنشر.",
-      email:        base+"اكتب نشرة بريدية:\n- سطر موضوع جذاب\n- مقدمة ترحيب\n- ملخص ٣ نقاط رئيسية\n- أبرز اقتباس من الحلقة\n- رابط للاستماع\n- خاتمة ودية",
-      titles:       base+"اقترح ١٠ عناوين بديلة:\n- ٣ تثير الفضول\n- ٣ تركز على الفائدة المباشرة\n- ٢ تستخدم الأرقام\n- ٢ قصيرة ومباشرة\nلكل عنوان: سبب اختياره في جملة.",
-    };
-    try {
-      const text = await callClaude("أنت خبير تسويق بودكاست عربي. تكتب محتوى تسويقياً جذاباً. ردودك بالعربية.", prompts[tab]);
-      setState({ mktOutputs:{...s.mktOutputs,[tab]:text}, mktLoading:"" });
-    } catch(e) { setState({ mktOutputs:{...s.mktOutputs,[tab]:"خطأ: "+e.message}, mktLoading:"" }); }
-  };
-
-  const wrap = el("div", null,
-    el("div",{style:{marginBottom:"20px"}},
-      el("div",{style:{fontSize:"19px",fontWeight:"700",color:C.text,marginBottom:"4px"}},"◐ التسويق والنشر"),
-      el("div",{style:{color:C.muted,fontSize:"13px"}},"توليد محتوى تسويقي جاهز لكل المنصات")
-    ),
-    el("div",{style:{marginBottom:"16px"}},
-      mkLabel("رابط الحلقة (اختياري)"),
-      mkInput(s.mktLink, v=>setState({mktLink:v}), "https://open.spotify.com/episode/...")
-    )
-  );
-
-  if (!s.episode) {
-    wrap.append(mkCard([el("div",{style:{color:C.muted,fontSize:"14px",textAlign:"center"}},'أنشئ حلقة أولاً من صفحة "إنشاء"')],{marginBottom:"16px"}));
-  }
-
-  // Tabs bar
-  wrap.append(
-    el("div",{style:{display:"flex",gap:"3px",background:C.bg,border:`1px solid ${C.border}`,
-      borderRadius:"8px",padding:"3px",marginBottom:"16px"}},
-      ...TABS.map(t=>
-        el("button",{onClick:()=>setState({mktTab:t.id}),style:{
-          flex:"1",background:s.mktTab===t.id?C.surface:"transparent",
-          border:s.mktTab===t.id?`1px solid ${C.border}`:"1px solid transparent",
-          borderRadius:"6px",padding:"7px 4px",color:s.mktTab===t.id?C.text:C.muted,
-          fontWeight:"600",fontSize:"11px",whiteSpace:"nowrap"}},t.label)
-      )
-    ),
-    mkBtn(s.mktLoading===s.mktTab?"جارٍ التوليد...":"توليد "+TABS.find(t=>t.id===s.mktTab)?.label,
-      ()=>genMkt(s.mktTab),
-      {accent:true,full:true,disabled:!s.episode||!!s.mktLoading}
-    )
-  );
-
-  if (s.mktLoading===s.mktTab) wrap.append(mkSpinner());
-
-  if (s.mktOutputs[s.mktTab] && s.mktLoading!==s.mktTab) {
-    wrap.append(el("div",{style:{marginTop:"14px"}},
-      mkOutBox(s.mktOutputs[s.mktTab], ()=>{
-        navigator.clipboard.writeText(s.mktOutputs[s.mktTab]);
-        setState({mktCopied:s.mktTab}); setTimeout(()=>setState({mktCopied:""}),2000);
-      }, s.mktCopied===s.mktTab)
-    ));
-  }
-
-  // Download
-  wrap.append(
-    el("div",{style:{marginTop:"20px",borderTop:`1px solid ${C.border}`,paddingTop:"18px"}},
-      el("div",{style:{fontSize:"12px",color:C.muted,marginBottom:"10px"}},"حفظ كل محتوى الحلقة في ملف واحد"),
-      mkBtn("⬇ تنزيل ملف الحلقة", ()=>{
-        if (!s.episode) return;
-        const ep = s.episode;
-        const content = ["# "+ep.name,"**الموضوع:** "+ep.topic,
-          "**النوع:** "+TYPES[ep.type]?.label,"**المدة:** "+ep.duration,
-          s.mktLink?"**رابط:** "+s.mktLink:"","---","","## السكريبت",ep.script||"—","",
-          s.mktOutputs.description?"## الوصف\n"+s.mktOutputs.description:"",
-          s.mktOutputs.social?"## السوشيال\n"+s.mktOutputs.social:"",
-          s.mktOutputs.email?"## النشرة\n"+s.mktOutputs.email:"",
-          s.mktOutputs.titles?"## العناوين البديلة\n"+s.mktOutputs.titles:"",
-        ].filter(Boolean).join("\n");
-        const blob = new Blob([content],{type:"text/plain;charset=utf-8"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href=url; a.download=(ep.name||"podcast")+".md"; a.click();
-        URL.revokeObjectURL(url);
-        setState({mktDlDone:true});
-      }, {outline:true,full:true,disabled:!s.episode}),
-      s.mktDlDone && mkNextBanner("الحلقة مكتملة","شاهد جميع حلقاتك المحفوظة","حلقاتي",()=>setState({tab:"episodes"}),C.ok)
-    )
-  );
-
-  return wrap;
-};
-
-// ─── EPISODES SCREEN ──────────────────────────────────────────────────────────
-const mkEpisodesScreen = () => {
-  const eps = state.episodes;
-  const wrap = el("div", null,
-    el("div",{style:{marginBottom:"20px"}},
-      el("div",{style:{fontSize:"19px",fontWeight:"700",color:C.text,marginBottom:"4px"}},"▦ حلقاتي"),
-      el("div",{style:{color:C.muted,fontSize:"13px"}},eps.length+" حلقة محفوظة")
-    )
-  );
-  if (!eps.length) {
-    wrap.append(mkCard([el("div",{style:{color:C.muted,fontSize:"14px",textAlign:"center"}},'لا توجد حلقات بعد — ابدأ من صفحة "إنشاء"')],{textAlign:"center",padding:"40px"}));
-    return wrap;
-  }
-  wrap.append(el("div",{style:{display:"grid",gap:"10px"}},
-    ...eps.map(ep =>
-      mkCard([
-        el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"7px"}},
-          el("div",null,
-            el("div",{style:{fontWeight:"700",color:C.text,fontSize:"14px",marginBottom:"4px"}},ep.name),
-            el("div",{style:{display:"flex",gap:"7px",alignItems:"center"}},
-              mkBadge(ep.type),
-              el("span",{style:{color:C.muted,fontSize:"11px"}},ep.duration)
-            )
-          ),
-          el("button",{onClick:()=>{
-            const updated = state.episodes.filter(e=>e.id!==ep.id);
-            localStorage.setItem(EPS_KEY,JSON.stringify(updated));
-            setState({episodes:updated});
-          },style:{background:"none",border:"none",color:C.dim,fontSize:"15px"}},"✕")
-        ),
-        el("div",{style:{color:C.muted,fontSize:"12px",marginBottom:"9px",lineHeight:"1.5"}},
-          (ep.topic||"").slice(0,100)+((ep.topic||"").length>100?"...":"")
-        ),
-        el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-          el("span",{style:{fontSize:"11px",color:C.dim}},new Date(ep.createdAt).toLocaleDateString("ar-SA")),
-          mkBtn("تحميل",()=>setState({episode:ep,tab:"create",step:2,script:ep.script,form:{name:ep.name,type:ep.type,duration:ep.duration,frequency:ep.frequency,topic:ep.topic,hostCount:ep.hostCount||2}}),{small:true,accent:true})
-        )
-      ], {padding:"16px"})
-    )
-  ));
-  return wrap;
-};
-
-// ─── RENDER ───────────────────────────────────────────────────────────────────
-const render = () => {
-  const root = document.getElementById("root");
-  root.innerHTML = "";
-
-  const s = state;
-
-  if (s.showStyle)  { root.appendChild(mkStyleModal()); }
-
-  const app = el("div", { style:{ minHeight:"100vh", display:"flex", flexDirection:"column", alignItems:"center", padding:"24px 16px" } });
-
-  // Header
-  const header = el("div", { style:{ width:"100%", maxWidth:"620px", marginBottom:"20px" } },
-    el("div", { style:{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" } },
-      el("div", null,
-        el("div",{style:{display:"inline-flex",alignItems:"center",gap:"8px",background:C.surface,
-          border:`1px solid ${C.border}`,borderRadius:"100px",padding:"4px 14px",marginBottom:"10px"}},
-          el("div",{style:{width:"5px",height:"5px",borderRadius:"50%",background:C.accent,boxShadow:`0 0 6px ${C.accent}`}}),
-          el("span",{style:{color:C.muted,fontSize:"10px",letterSpacing:"0.12em"}},"PODCAST STUDIO")
-        ),
-        el("div",{style:{fontSize:"21px",fontWeight:"700",color:C.text,marginBottom:"2px"}},"استوديو البودكاست"),
-        el("div",{style:{color:C.muted,fontSize:"12px"}},"من الفكرة إلى النشر")
-      ),
-      el("div",{style:{display:"flex",gap:"8px",alignItems:"center"}},
-        el("button",{onClick:()=>setState({showStyle:true,styleForm:getStyle()}),style:{
-          background:s.hasStyle?C.accentGlow:C.surface,
-          border:`1px solid ${s.hasStyle?C.accent:C.border}`,
-          borderRadius:"10px",padding:"9px 13px",color:s.hasStyle?C.accent:C.muted,
-          fontWeight:"700",fontSize:"11px",textAlign:"center"}},
-          el("div",{style:{fontSize:"16px",marginBottom:"2px"}},"✦"),
-          el("div",null,"أسلوبي"),
-          el("div",{style:{fontSize:"9px",marginTop:"2px",opacity:"0.7"}},s.hasStyle?"مفعّل":"غير مُعدّ")
-        )
-      )
-    ),
-    s.episode && el("div",{style:{marginTop:"10px",background:C.surface,border:`1px solid ${C.border}`,
-      borderRadius:"8px",padding:"9px 13px",display:"flex",alignItems:"center",gap:"8px"}},
-      el("div",{style:{width:"6px",height:"6px",borderRadius:"50%",background:C.ok,flexShrink:"0"}}),
-      el("span",{style:{color:C.muted,fontSize:"11px"}},"الحلقة الحالية:"),
-      el("span",{style:{fontWeight:"700",fontSize:"12px",color:C.text}},s.episode.name),
-      mkBadge(s.episode.type)
-    )
-  );
-
-  const mainCard = el("div",{style:{width:"100%",maxWidth:"620px"}},
-    el("div",{style:{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"22px"}},
-      mkNav(),
-      s.tab==="create"     ? mkCreateScreen()     :
-      s.tab==="production" ? mkProductionScreen()  :
-      s.tab==="marketing"  ? mkMarketingScreen()   :
-                             mkEpisodesScreen()
-    )
-  );
-
-  const footer = el("div",{style:{color:C.dim,fontSize:"11px",marginTop:"18px",textAlign:"center"}},
-    "المحتوى المولد للاسترشاد والتعديل قبل النشر"
-  );
-
-  app.append(header, mainCard, footer);
+function render(){
+  const root=document.getElementById("root");
+  root.innerHTML="";
+  const s=state;
+  if(s.showStyle)root.appendChild(mkStyleModal());
+  const app=el("div",{style:{minHeight:"100vh",display:"flex",flexDirection:"column",alignItems:"center",padding:"24px 14px"}});
+  const hdr=el("div",{style:{width:"100%",maxWidth:"610px",marginBottom:"18px"}},el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}},el("div",null,el("div",{style:{display:"inline-flex",alignItems:"center",gap:"7px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"100px",padding:"4px 13px",marginBottom:"10px"}},el("div",{style:{width:"5px",height:"5px",borderRadius:"50%",background:C.accent,boxShadow:`0 0 6px ${C.accent}`}}),el("span",{style:{color:C.muted,fontSize:"10px",letterSpacing:"0.12em"}},"PODCAST STUDIO")),el("div",{style:{fontSize:"20px",fontWeight:"700",color:C.text,marginBottom:"2px"}},"استوديو البودكاست"),el("div",{style:{color:C.muted,fontSize:"12px"}},"من الفكرة إلى النشر")),el("button",{onClick:()=>setState({showStyle:true,styleForm:getStyle()}),style:{background:s.hasStyle?C.accentGlow:C.surface,border:`1px solid ${s.hasStyle?C.accent:C.border}`,borderRadius:"10px",padding:"9px 13px",color:s.hasStyle?C.accent:C.muted,fontWeight:"700",fontSize:"11px",textAlign:"center"}},el("div",{style:{fontSize:"17px",marginBottom:"2px"}},"✦"),el("div",null,"أسلوبي"),el("div",{style:{fontSize:"9px",marginTop:"2px",opacity:"0.7"}},s.hasStyle?"مفعّل":"غير مُعدّ"))));
+  if(s.episode)hdr.appendChild(el("div",{style:{marginTop:"10px",background:C.surface,border:`1px solid ${C.border}`,borderRadius:"8px",padding:"9px 13px",display:"flex",alignItems:"center",gap:"8px"}},el("div",{style:{width:"6px",height:"6px",borderRadius:"50%",background:C.ok,flexShrink:"0"}}),el("span",{style:{color:C.muted,fontSize:"11px"}},"الحلقة الحالية:"),el("span",{style:{fontWeight:"700",fontSize:"12px",color:C.text}},s.episode.name),mkBadge(s.episode.type)));
+  const main=el("div",{style:{width:"100%",maxWidth:"610px"}},el("div",{style:{background:C.surface,border:`1px solid ${C.border}`,borderRadius:"14px",padding:"20px"}},mkNav(),s.tab==="create"?mkCreate():s.tab==="production"?mkProd():s.tab==="marketing"?mkMkt():mkEps()));
+  app.append(hdr,main,el("div",{style:{color:C.dim,fontSize:"10px",marginTop:"16px",textAlign:"center"}},"المحتوى المولد للاسترشاد والتعديل قبل النشر"));
   root.appendChild(app);
-};
+}
 
 render();
 </script>
