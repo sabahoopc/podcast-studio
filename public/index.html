@@ -360,7 +360,9 @@ const CreateScreen = ({ onEpReady, onNav }) => {
   const generate = async () => {
     setBusy(true); setScript("");
     try {
-      const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt());
+      const tokensMap = {"١٠–٢٠ دقيقة":3000,"٢٠–٤٠ دقيقة":5000,"٤٠–٦٠ دقيقة":8000,"٦٠–٩٠ دقيقة":12000,"أكثر من ٩٠ دقيقة":16000};
+const maxTok = tokensMap[duration] || 8000;
+const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt(), maxTok);
       setScript(text);
       const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: text, createdAt: new Date().toISOString() };
       sEp(ep); onEpReady(ep);
