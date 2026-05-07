@@ -360,7 +360,14 @@ const CreateScreen = ({ onEpReady, onNav }) => {
   const generate = async () => {
     setBusy(true); setScript("");
     try {
-      const tokensMap = {"١٠–٢٠ دقيقة":3000,"٢٠–٤٠ دقيقة":5000,"٤٠–٦٠ دقيقة":8000,"٦٠–٩٠ دقيقة":12000,"أكثر من ٩٠ دقيقة":16000};
+      const prompt1 = buildPrompt() + "\n\nمهم: اكتب الجزء الأول فقط — المقدمة وأول نصف الموضوع. توقف عند منتصف الحلقة تقريباً وضع في النهاية: [يتبع...]";
+      const part1 = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", prompt1);
+      
+      const prompt2 = `هذا هو الجزء الأول من السكريبت:\n\n${part1}\n\nأكمل الجزء الثاني — النصف الثاني من الموضوع والخاتمة مع call to action. لا تعيد ما كتب في الجزء الأول.`;
+      const part2 = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", prompt2);
+      
+      const fullScript = part1.replace("[يتبع...]", "").trim() + "\n\n" + part2;
+      setScript(fullScript);
 const maxTok = tokensMap[duration] || 8000;
 const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt(), maxTok);
       setScript(text);
