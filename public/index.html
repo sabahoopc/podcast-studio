@@ -56,7 +56,18 @@ const el=(tag,attrs,...children)=>{
 
 const C={bg:"#0a0a0f",surface:"#12121a",card:"#1a1a26",border:"#2a2a3e",accent:"#c8a96e",accentDim:"#8a7048",accentGlow:"rgba(200,169,110,0.12)",text:"#e8e4d8",muted:"#7a7890",dim:"#4a4860",ok:"#4e9e6f"};
 const IS={width:"100%",background:C.bg,border:`1px solid ${C.border}`,borderRadius:"6px",padding:"11px 13px",color:C.text,fontSize:"14px",direction:"rtl",lineHeight:"1.8",boxSizing:"border-box"};
-const mkInput=(v,cb,ph,style={})=>el("input",{value:v,onInput:e=>cb(e.target.value),placeholder:ph,style:{...IS,...style}});
+const mkInput=(v,cb,ph,style={})=>{
+  const i=el("input",{placeholder:ph,style:{...IS,...style}});
+  i.value=v;
+  i.addEventListener("input",e=>{
+    const pos=i.selectionStart;
+    cb(e.target.value);
+    requestAnimationFrame(()=>{
+      try{i.setSelectionRange(pos,pos);}catch{}
+    });
+  });
+  return i;
+};
 const mkTextarea=(v,cb,ph,rows=4)=>{const t=el("textarea",{placeholder:ph,rows,style:{...IS,resize:"vertical"}});t.value=v;t.addEventListener("input",e=>cb(e.target.value));return t;};
 const mkSelect=(v,cb,opts,ph)=>{const s=el("select",{style:{...IS,cursor:"pointer",appearance:"none",color:v?C.text:C.muted}},el("option",{value:"",disabled:true},ph),...opts.map(o=>el("option",{value:o},o)));s.value=v;s.addEventListener("change",e=>cb(e.target.value));return s;};
 const mkBtn=(text,onClick,o={})=>el("button",{onClick,disabled:o.disabled,style:{background:o.accent?(o.color||C.accent):o.outline?"transparent":C.card,border:o.outline?`1px solid ${C.border}`:o.accent?"none":`1px solid ${C.border}`,borderRadius:"6px",color:o.accent?"#0a0a0f":C.muted,fontWeight:"700",fontSize:o.small?"12px":"14px",padding:o.small?"6px 14px":"11px 22px",opacity:o.disabled?"0.4":"1",cursor:o.disabled?"not-allowed":"pointer",width:o.full?"100%":"auto"}},text);
