@@ -368,9 +368,10 @@ const CreateScreen = ({ onEpReady, onNav }) => {
       
       const fullScript = part1.replace("[يتبع...]", "").trim() + "\n\n" + part2;
       setScript(fullScript);
-const maxTok = tokensMap[duration] || 8000;
-const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt(), maxTok);
-      setScript(text);
+const fullScript = part1.replace("[يتبع...]", "").trim() + "\n\n" + part2;
+setScript(fullScript);
+const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: fullScript, createdAt: new Date().toISOString() };
+sEp(ep); onEpReady(ep);
       const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: text, createdAt: new Date().toISOString() };
       sEp(ep); onEpReady(ep);
     } catch (e) { setScript("خطأ: " + e.message); }
