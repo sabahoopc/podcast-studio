@@ -33,7 +33,7 @@ const SUPABASE_URL = "https://qawyirrrprjcklwxgzqu.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
  // ── Usage ──────────────────────────────────────────────────────────────────
-const PLANS = { free: 3, pro: Infinity };
+const PLANS = { free: 1, pro: 4 };
 
 const getUsage = async (userId) => {
   const { data } = await sb.from("usage").select("*").eq("user_id", userId).single();
