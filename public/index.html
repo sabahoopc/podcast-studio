@@ -23,9 +23,15 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script type="text/babel">
 const { useState, useEffect, useCallback, useRef } = React;
+
+// ── Supabase ───────────────────────────────────────────────────────────────
+const SUPABASE_URL = "https://qawyirrrprjcklwxgzqu.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const WORKER = "https://podcast-api.sabahoo-pc.workers.dev/";
@@ -49,11 +55,11 @@ const sEp    = ep => {
   localStorage.setItem(EK, JSON.stringify(eps));
 };
 
-const callAI = async (system, msg, max = 8000) => {
+const callAI = async (system, msg, max = 3500) => {
   const r = await fetch(WORKER, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: max, system, messages: [{ role: "user", content: msg }] }),
+    body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: max, system, messages: [{ role: "user", content: msg }] }),
   });
   if (!r.ok) { const e = await r.json().catch(() => ({})); throw new Error(e?.error?.message || "HTTP " + r.status); }
   const j = await r.json();
@@ -205,7 +211,7 @@ const OutputBox = ({ text }) => (
   <div style={{
     background: T.bg, border: `1px solid ${T.brd}`, borderRadius: "10px",
     padding: "18px", color: T.tx, fontSize: "13px", lineHeight: "2",
-    direction: "rtl", whiteSpace: "pre-wrap", maxHeight: "600px", overflowY: "auto",
+    direction: "rtl", whiteSpace: "pre-wrap", maxHeight: "380px", overflowY: "auto",
     fontFamily: "'Noto Kufi Arabic', sans-serif",
   }}>{text}</div>
 );
@@ -360,13 +366,9 @@ const CreateScreen = ({ onEpReady, onNav }) => {
   const generate = async () => {
     setBusy(true); setScript("");
     try {
-      const prompt1 = buildPrompt() + "\n\nمهم: اكتب الجزء الأول فقط — المقدمة وأول نصف الموضوع. توقف عند منتصف الحلقة تقريباً وضع في النهاية: [يتبع...]";
-      const part1 = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", prompt1);
-      const prompt2 = `هذا هو الجزء الأول من السكريبت:\n\n${part1}\n\nأكمل الجزء الثاني — النصف الثاني من الموضوع والخاتمة مع call to action. لا تعيد ما كتب في الجزء الأول.`;
-      const part2 = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", prompt2);
-      const fullScript = part1.replace("[يتبع...]", "").trim() + "\n\n" + part2;
-      setScript(fullScript);
-      const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: fullScript, createdAt: new Date().toISOString() };
+      const text = await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.", buildPrompt());
+      setScript(text);
+      const ep = { id: Date.now() + "", name, type, duration, frequency, topic, hostCount, script: text, createdAt: new Date().toISOString() };
       sEp(ep); onEpReady(ep);
     } catch (e) { setScript("خطأ: " + e.message); }
     setBusy(false);
@@ -709,14 +711,154 @@ const EpisodesScreen = ({ onLoad }) => {
   );
 };
 
+// ── Auth Screen ────────────────────────────────────────────────────────────
+const AuthScreen = ({ onAuth }) => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [mode, setMode] = useState("login"); // login | signup | reset
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState({ text: "", ok: false });
+
+  const handle = async () => {
+    if (!email.trim() || (!password.trim() && mode !== "reset")) return;
+    setBusy(true); setMsg({ text: "", ok: false });
+    try {
+      if (mode === "login") {
+        const { data, error } = await sb.auth.signInWithPassword({ email, password });
+        if (error) throw new Error(error.message);
+        onAuth(data.user);
+      } else if (mode === "signup") {
+        const { data, error } = await sb.auth.signUp({ email, password });
+        if (error) throw new Error(error.message);
+        setMsg({ text: "تم إنشاء الحساب — تحقق من بريدك لتفعيل الحساب", ok: true });
+      } else {
+        const { error } = await sb.auth.resetPasswordForEmail(email);
+        if (error) throw new Error(error.message);
+        setMsg({ text: "تم إرسال رابط إعادة تعيين كلمة المرور لبريدك", ok: true });
+      }
+    } catch (e) {
+      const msgs = {
+        "Invalid login credentials": "البريد أو كلمة المرور غير صحيحة",
+        "User already registered": "هذا البريد مسجّل بالفعل — سجّل دخول",
+        "Password should be at least 6 characters": "كلمة المرور يجب أن تكون 6 أحرف على الأقل",
+      };
+      setMsg({ text: msgs[e.message] || e.message, ok: false });
+    }
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", background: T.bg }}>
+      <div style={{ width: "100%", maxWidth: "420px" }} className="fade-in">
+
+        {/* Logo */}
+        <div style={{ textAlign: "center", marginBottom: "40px" }}>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "8px", background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "100px", padding: "5px 16px", marginBottom: "16px" }}>
+            <div style={{ width: "6px", height: "6px", borderRadius: "50%", background: T.acc, boxShadow: `0 0 8px ${T.acc}` }} />
+            <span style={{ color: T.tx2, fontSize: "11px", letterSpacing: "0.13em" }}>PODCAST STUDIO</span>
+          </div>
+          <div style={{ fontSize: "24px", fontWeight: "700", color: T.tx, marginBottom: "6px" }}>استوديو البودكاست</div>
+          <div style={{ color: T.tx2, fontSize: "13px" }}>من الفكرة إلى النشر</div>
+        </div>
+
+        {/* Card */}
+        <Card>
+          <div style={{ fontSize: "17px", fontWeight: "700", color: T.tx, marginBottom: "6px" }}>
+            {mode === "login" ? "تسجيل الدخول" : mode === "signup" ? "إنشاء حساب جديد" : "استعادة كلمة المرور"}
+          </div>
+          <div style={{ color: T.tx2, fontSize: "12px", marginBottom: "24px" }}>
+            {mode === "login" ? "أدخل بياناتك للمتابعة" : mode === "signup" ? "أنشئ حسابك مجاناً" : "سنرسل رابط الاستعادة لبريدك"}
+          </div>
+
+          <Field label="البريد الإلكتروني">
+            <Input value={email} onChange={setEmail} placeholder="example@email.com" style={{ direction: "ltr" }} />
+          </Field>
+
+          {mode !== "reset" && (
+            <Field label="كلمة المرور">
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder="••••••••"
+                onKeyDown={e => e.key === "Enter" && handle()}
+                style={{ ...inputStyle, direction: "ltr" }}
+                onFocus={e => e.target.style.borderColor = T.acc}
+                onBlur={e => e.target.style.borderColor = T.brd}
+              />
+            </Field>
+          )}
+
+          {msg.text && (
+            <div style={{ padding: "10px 14px", borderRadius: "8px", fontSize: "13px", marginBottom: "16px",
+              background: msg.ok ? T.ok + "20" : "#c05040" + "20",
+              border: `1px solid ${msg.ok ? T.ok : "#c05040"}40`,
+              color: msg.ok ? T.ok : "#e07060" }}>
+              {msg.text}
+            </div>
+          )}
+
+          <Btn variant="fill" full disabled={busy || !email.trim() || (mode !== "reset" && !password.trim())} onClick={handle}>
+            {busy ? "جارٍ المعالجة..." : mode === "login" ? "دخول" : mode === "signup" ? "إنشاء الحساب" : "إرسال رابط الاستعادة"}
+          </Btn>
+
+          <div style={{ marginTop: "20px", borderTop: `1px solid ${T.brd}`, paddingTop: "18px", display: "flex", flexDirection: "column", gap: "10px" }}>
+            {mode === "login" && (
+              <>
+                <button onClick={() => { setMode("signup"); setMsg({ text: "", ok: false }); }} style={{ background: "none", border: "none", color: T.acc, fontSize: "13px", cursor: "pointer" }}>
+                  ليس لديك حساب؟ أنشئ حساباً جديداً
+                </button>
+                <button onClick={() => { setMode("reset"); setMsg({ text: "", ok: false }); }} style={{ background: "none", border: "none", color: T.tx2, fontSize: "12px", cursor: "pointer" }}>
+                  نسيت كلمة المرور؟
+                </button>
+              </>
+            )}
+            {mode !== "login" && (
+              <button onClick={() => { setMode("login"); setMsg({ text: "", ok: false }); }} style={{ background: "none", border: "none", color: T.acc, fontSize: "13px", cursor: "pointer" }}>
+                لديك حساب بالفعل؟ سجّل دخول
+              </button>
+            )}
+          </div>
+        </Card>
+      </div>
+    </div>
+  );
+};
+
 // ── App ────────────────────────────────────────────────────────────────────
 const App = () => {
   const [tab, setTab] = useState("create");
   const [showStyle, setShowStyle] = useState(false);
   const [hasStyle, setHasStyle] = useState(() => { const s = gStyle(); return !!(s.tone || s.opening); });
   const [episode, setEpisode] = useState(null);
+  const [user, setUser] = useState(null);
+  const [authLoading, setAuthLoading] = useState(true);
+
+  useEffect(() => {
+    sb.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user || null);
+      setAuthLoading(false);
+    });
+    const { data: listener } = sb.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  if (authLoading) return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: T.bg }}>
+      <Spinner />
+    </div>
+  );
+
+  if (!user) return <AuthScreen onAuth={setUser} />;
 
   const handleLoad = ep => { setEpisode(ep); setTab("create"); };
+
+  const signOut = async () => {
+    await sb.auth.signOut();
+    setUser(null);
+  };
 
   return (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", padding: "24px 14px" }}>
@@ -734,7 +876,8 @@ const App = () => {
             <div style={{ fontSize: "22px", fontWeight: "700", color: T.tx, marginBottom: "2px" }}>استوديو البودكاست</div>
             <div style={{ color: T.tx2, fontSize: "12px" }}>من الفكرة إلى النشر</div>
           </div>
-          <button onClick={() => setShowStyle(true)} style={{
+          <div style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+            <button onClick={() => setShowStyle(true)} style={{
             background: hasStyle ? T.accL : T.sur,
             border: `1px solid ${hasStyle ? T.acc : T.brd}`,
             borderRadius: "10px", padding: "10px 14px", cursor: "pointer",
@@ -745,6 +888,15 @@ const App = () => {
             <div>أسلوبي</div>
             <div style={{ fontSize: "9px", marginTop: "2px", opacity: 0.7 }}>{hasStyle ? "مفعّل" : "غير مُعدّ"}</div>
           </button>
+            <button onClick={signOut} style={{
+              background: T.sur, border: `1px solid ${T.brd}`, borderRadius: "10px",
+              padding: "9px 13px", cursor: "pointer", color: T.tx2,
+              fontFamily: "'Noto Kufi Arabic', sans-serif", fontWeight: "700", fontSize: "11px", textAlign: "center",
+            }}>
+              <div style={{ fontSize: "17px", marginBottom: "2px" }}>→</div>
+              <div>خروج</div>
+            </button>
+          </div>
         </div>
 
         {episode && (
