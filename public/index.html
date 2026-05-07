@@ -32,6 +32,33 @@ const { useState, useEffect, useCallback, useRef } = React;
 const SUPABASE_URL = "https://qawyirrrprjcklwxgzqu.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+ // ── Usage ──────────────────────────────────────────────────────────────────
+const PLANS = { free: 3, pro: Infinity };
+
+const getUsage = async (userId) => {
+  const { data } = await sb.from("usage").select("*").eq("user_id", userId).single();
+  if (!data) {
+    await sb.from("usage").insert({ user_id: userId });
+    return { episodes_used: 0, plan: "free" };
+  }
+  return data;
+};
+
+const incrementUsage = async (userId) => {
+  const { data } = await sb.from("usage").select("episodes_used").eq("user_id", userId).single();
+  const current = data?.episodes_used || 0;
+  await sb.from("usage").update({ episodes_used: current + 1, updated_at: new Date().toISOString() }).eq("user_id", userId);
+};
+
+const resetUsageIfNewMonth = async (userId) => {
+  const { data } = await sb.from("usage").select("updated_at, episodes_used").eq("user_id", userId).single();
+  if (!data) return;
+  const lastUpdate = new Date(data.updated_at);
+  const now = new Date();
+  if (lastUpdate.getMonth() !== now.getMonth() || lastUpdate.getFullYear() !== now.getFullYear()) {
+    await sb.from("usage").update({ episodes_used: 0, updated_at: now.toISOString() }).eq("user_id", userId);
+  }
+};
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const WORKER = "https://podcast-api.sabahoo-pc.workers.dev/";
