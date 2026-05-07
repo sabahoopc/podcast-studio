@@ -445,7 +445,7 @@ const CreateScreen = ({ onEpReady, onNav, user }) => {
     const limit = PLANS[plan] || PLANS.free;
     if (usage && usage.episodes_used >= limit) {
       setScript(plan === "free"
-        ? `وصلت للحد المجاني (${PLANS.free} حلقة/شهر). يرجى الترقية للباقة المدفوعة للحصول على ${PLANS.pro} حلقات/شهر.`
+        ? "UPGRADE"
         : `وصلت للحد الأقصى لباقتك (${PLANS.pro} حلقات/شهر).`);
       return;
     }
