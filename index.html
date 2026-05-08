@@ -143,6 +143,12 @@ border-bottom: 1px solid rgba(255,255,255,0.04);
 .types-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
 .type-card { background: var(–sur); border: 1px solid var(–brd); border-radius: 14px; padding: 28px 22px; text-align: center; transition: all 0.3s; }
 .type-card:hover { transform: translateY(-4px); }
+.type-card:nth-child(1) { border-color: rgba(61,158,143,0.4) !important; }
+.type-card:nth-child(2) { border-color: rgba(112,96,192,0.4) !important; }
+.type-card:nth-child(3) { border-color: rgba(192,80,64,0.4) !important; }
+.type-card:nth-child(1) .type-name { color: #3d9e8f !important; -webkit-text-fill-color: #3d9e8f !important; }
+.type-card:nth-child(2) .type-name { color: #7060c0 !important; -webkit-text-fill-color: #7060c0 !important; }
+.type-card:nth-child(3) .type-name { color: #c05040 !important; -webkit-text-fill-color: #c05040 !important; }
 .type-icon { font-size: 32px; margin-bottom: 12px; }
 .type-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
 .type-desc { font-size: 12px; color: var(–tx2); line-height: 1.7; }
