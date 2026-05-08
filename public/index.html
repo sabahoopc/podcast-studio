@@ -438,7 +438,10 @@ const CreateScreen = ({onEpReady,onNav,user}) => {
       const part1=await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.",p1);
       const p2=`هذا هو الجزء الأول من السكريبت:\n\n${part1}\n\nأكمل الجزء الثاني — النصف الثاني من الموضوع والخاتمة مع call to action. لا تعيد ما كتب في الجزء الأول.`;
       const part2=await callAI("أنت خبير بودكاست عربي. تكتب سكريبتات كاملة جاهزة للتسجيل. إذا وُجد ملف أسلوب، التزم به في كل جملة. ردودك بالعربية.",p2);
-      const fullScript=part1.replace("[يتبع...]","").trim()+"\n\n"+part2;
+      const part3prompt = `هذا ما كُتب حتى الآن:\n\n${part1.replace("[يتبع...]","").trim()}\n\n${part2}\n\nأكمل الجزء الأخير — الخاتمة القوية مع call to action فقط إذا لم تكتب بعد. إذا كانت الخاتمة موجودة اكتب [مكتمل].`;
+const part3 = await callAI("أنت خبير بودكاست عربي. ردودك بالعربية.", part3prompt);
+const fullScript = part1.replace("[يتبع...]","").trim()+"\n\n"+part2+(part3.includes("[مكتمل]")?"":"\n\n"+part3);
+
       setScript(fullScript);
       const ep={id:Date.now()+"",name,type,duration,frequency,topic,hostCount,script:fullScript,createdAt:new Date().toISOString()};
       sEp(ep);onEpReady(ep);
