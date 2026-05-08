@@ -763,7 +763,7 @@ const AdminScreen = ({onBack}) => {
                   {users.map(u=>(
                     <tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`,transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=T.sur} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                       <td style={{padding:"12px 14px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
-                      <td style={{padding:"12px 14px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.user_id.slice(0,8)}...</td>
+                      <td style={{padding:"12px 14px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.profile.email||u.user_id.slice(0,8)+"..."}</td>
                       <td style={{padding:"12px 14px",color:T.tx2,whiteSpace:"nowrap"}}>{u.profile.podcast_name||"—"}</td>
                       <td style={{padding:"12px 14px",whiteSpace:"nowrap"}}><span style={{color:planColor(u.plan),fontWeight:"700"}}>{planLabel(u)}</span></td>
                       <td style={{padding:"12px 14px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}/{getEffectiveLimit(u)===Infinity?"∞":getEffectiveLimit(u)}</td>
