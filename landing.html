@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>استوديو البودكاست — من الفكرة إلى النشر</title>
+<meta name="description" content="أداة ذكية تساعد البودكاسترز العرب على تحضير حلقاتهم من السكريبت إلى التسويق في دقائق">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #080810;
+  --sur: #0f0f1a;
+  --car: #141420;
+  --brd: #1e1e30;
+  --brd2: #2a2a40;
+  --acc: #c8a050;
+  --acc2: #e8c070;
+  --tx: #eeeae0;
+  --tx2: #8a8599;
+  --tx3: #3a3850;
+  --ok: #3d9e6f;
+  --solo: #3d9e8f;
+  --group: #7060c0;
+  --interview: #c05040;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: #080810;
+}
+
+body {
+  background: #080810 !important;
+  background-color: #080810 !important;
+  font-family: 'Noto Kufi Arabic', sans-serif;
+  direction: rtl;
+  color: var(--tx);
+  overflow-x: hidden;
+  line-height: 1.7;
+}
+
+.orb { position: fixed; border-radius: 50%; filter: blur(120px); pointer-events: none; z-index: 0; }
+.orb-1 { width: 600px; height: 600px; background: rgba(200,160,80,0.06); top: -200px; right: -200px; }
+.orb-2 { width: 500px; height: 500px; background: rgba(61,158,143,0.05); bottom: 20%; left: -150px; }
+.orb-3 { width: 400px; height: 400px; background: rgba(112,96,192,0.04); bottom: -100px; right: 20%; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-8px); } }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes gradientShift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+.animate-1 { animation: fadeUp 0.7s ease 0.1s both; }
+.animate-2 { animation: fadeUp 0.7s ease 0.2s both; }
+.animate-3 { animation: fadeUp 0.7s ease 0.3s both; }
+.animate-4 { animation: fadeUp 0.7s ease 0.4s both; }
+.float { animation: float 4s ease-in-out infinite; }
+
+.container { max-width: 1000px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+.section { padding: 100px 0; }
+
+/* NAV */
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 16px 24px; display: flex; align-items: center; justify-content: space-between;
+  background: rgba(8,8,16,0.85); backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; color: var(--tx); text-decoration: none; }
+.nav-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--acc); box-shadow: 0 0 10px var(--acc); animation: pulse 2s ease-in-out infinite; }
+.nav-cta { background: var(--acc); color: #080810; border: none; border-radius: 8px; padding: 10px 22px; font-family: 'Noto Kufi Arabic', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none; transition: all 0.2s; display: inline-block; }
+.nav-cta:hover { background: var(--acc2); transform: translateY(-1px); }
+
+/* HERO */
+.hero { min-height: 100vh; display: flex; align-items: center; padding: 120px 0 80px; position: relative; overflow: hidden; }
+.hero-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(200,160,80,0.1); border: 1px solid rgba(200,160,80,0.3); border-radius: 100px; padding: 6px 16px; font-size: 12px; color: var(--acc); margin-bottom: 28px; letter-spacing: 0.05em; }
+.hero-title { font-size: clamp(38px, 7vw, 68px); font-weight: 900; line-height: 1.1; margin-bottom: 24px; letter-spacing: -0.02em; }
+.hero-title .accent { background: linear-gradient(135deg, var(--acc) 0%, var(--acc2) 50%, #f0d080 100%); background-size: 200% auto; -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; animation: gradientShift 3s ease infinite; }
+.hero-sub { font-size: 17px; color: var(--tx2); max-width: 520px; margin-bottom: 40px; line-height: 1.8; font-weight: 400; }
+.hero-cta-group { display: flex; gap: 14px; flex-wrap: wrap; }
+.btn-primary { background: var(--acc); color: #080810; border: none; border-radius: 10px; padding: 15px 32px; font-family: 'Noto Kufi Arabic', sans-serif; font-weight: 700; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btn-primary:hover { background: var(--acc2); transform: translateY(-2px); box-shadow: 0 12px 40px rgba(200,160,80,0.25); }
+.btn-secondary { background: transparent; color: var(--tx2); border: 1px solid var(--brd2); border-radius: 10px; padding: 15px 32px; font-family: 'Noto Kufi Arabic', sans-serif; font-weight: 600; font-size: 15px; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; }
+.btn-secondary:hover { border-color: var(--acc); color: var(--acc); }
+
+.hero-stats { display: flex; gap: 40px; margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--brd); flex-wrap: wrap; }
+.stat-num { font-size: 28px; font-weight: 800; color: var(--tx); line-height: 1; margin-bottom: 4px; }
+.stat-num span { color: var(--acc); }
+.stat-label { font-size: 12px; color: var(--tx2); }
+
+/* MOCK APP */
+.hero-visual { position: absolute; left: -40px; top: 50%; transform: translateY(-50%); width: 400px; opacity: 0.9; }
+.mock-app { background: var(--sur); border: 1px solid var(--brd2); border-radius: 16px; overflow: hidden; box-shadow: 0 40px 100px rgba(0,0,0,0.6); }
+.mock-header { background: var(--car); border-bottom: 1px solid var(--brd); padding: 12px 16px; display: flex; align-items: center; gap: 8px; }
+.mock-dots { display: flex; gap: 5px; }
+.mock-dot { width: 8px; height: 8px; border-radius: 50%; }
+.mock-nav { display: flex; gap: 3px; background: var(--bg); border: 1px solid var(--brd); border-radius: 8px; padding: 3px; margin: 14px; }
+.mock-tab { flex: 1; padding: 7px 4px; border-radius: 6px; font-size: 10px; text-align: center; color: var(--tx2); }
+.mock-tab.active { background: var(--acc); color: #080810; font-weight: 700; }
+.mock-body { padding: 0 14px 14px; }
+.mock-field { background: var(--bg); border: 1px solid var(--brd); border-radius: 7px; padding: 9px 11px; margin-bottom: 8px; font-size: 10px; color: var(--tx2); }
+.mock-type-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 5px; margin-bottom: 8px; }
+.mock-type { background: var(--bg); border: 1px solid var(--brd); border-radius: 7px; padding: 9px 5px; text-align: center; font-size: 9px; color: var(--tx2); }
+.mock-type.active { border-color: var(--solo); background: rgba(61,158,143,0.1); color: var(--solo); }
+.mock-btn { background: var(--acc); color: #080810; border: none; border-radius: 7px; padding: 9px; width: 100%; font-size: 11px; font-weight: 700; text-align: center; margin-bottom: 8px; }
+.mock-result { background: var(--bg); border: 1px solid var(--brd); border-radius: 7px; padding: 10px; }
+.mock-line { height: 6px; background: var(--brd2); border-radius: 3px; margin-bottom: 5px; }
+
+/* SECTION HEADERS */
+.section-header { text-align: center; margin-bottom: 60px; }
+.section-tag { display: inline-block; font-size: 11px; color: var(--acc); letter-spacing: 0.15em; text-transform: uppercase; margin-bottom: 14px; padding: 5px 14px; background: rgba(200,160,80,0.1); border: 1px solid rgba(200,160,80,0.2); border-radius: 100px; }
+.section-title { font-size: clamp(26px, 4vw, 38px); font-weight: 800; color: var(--tx); margin-bottom: 14px; letter-spacing: -0.02em; }
+.section-sub { font-size: 15px; color: var(--tx2); max-width: 500px; margin: 0 auto; }
+
+/* FEATURES */
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.feature-card { background: var(--sur); border: 1px solid var(--brd); border-radius: 14px; padding: 26px 22px; transition: all 0.3s; position: relative; overflow: hidden; }
+.feature-card:hover { border-color: var(--brd2); transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.feature-icon { font-size: 26px; margin-bottom: 14px; display: block; }
+.feature-title { font-size: 14px; font-weight: 700; color: var(--tx); margin-bottom: 8px; }
+.feature-desc { font-size: 12px; color: var(--tx2); line-height: 1.7; }
+.feature-tag { display: inline-block; font-size: 10px; padding: 2px 8px; border-radius: 4px; margin-top: 10px; font-weight: 600; }
+
+/* HOW IT WORKS */
+.steps { display: grid; gap: 0; position: relative; max-width: 560px; margin: 0 auto; }
+.steps::before { content: ''; position: absolute; right: 22px; top: 40px; bottom: 40px; width: 1px; background: linear-gradient(to bottom, transparent, var(--brd2) 20%, var(--brd2) 80%, transparent); }
+.step { display: flex; gap: 22px; align-items: flex-start; padding: 28px 0; }
+.step-num { width: 44px; height: 44px; border-radius: 50%; background: var(--car); border: 1px solid var(--brd2); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: var(--acc); flex-shrink: 0; position: relative; z-index: 1; }
+.step-content { padding-top: 8px; }
+.step-title { font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 5px; }
+.step-desc { font-size: 12px; color: var(--tx2); line-height: 1.7; }
+
+/* PODCAST TYPES */
+.types-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+.type-card { background: var(--sur); border: 1px solid var(--brd); border-radius: 14px; padding: 28px 22px; text-align: center; transition: all 0.3s; }
+.type-card:hover { transform: translateY(-4px); }
+.type-icon { font-size: 32px; margin-bottom: 12px; }
+.type-name { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.type-desc { font-size: 12px; color: var(--tx2); line-height: 1.7; }
+.type-features { list-style: none; margin-top: 14px; text-align: right; }
+.type-features li { font-size: 11px; color: var(--tx2); padding: 4px 0; border-bottom: 1px solid var(--brd); display: flex; align-items: center; gap: 6px; }
+.type-features li:last-child { border-bottom: none; }
+.type-features li::before { content: '✓'; color: var(--ok); font-size: 10px; flex-shrink: 0; }
+
+/* PRICING */
+.pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; max-width: 680px; margin: 0 auto; }
+.pricing-card { background: var(--sur); border: 1px solid var(--brd); border-radius: 16px; padding: 32px 28px; position: relative; transition: all 0.3s; }
+.pricing-card.featured { border-color: var(--acc); background: linear-gradient(135deg, var(--sur) 0%, rgba(200,160,80,0.05) 100%); box-shadow: 0 0 0 1px rgba(200,160,80,0.1), 0 20px 60px rgba(200,160,80,0.08); }
+.pricing-badge { position: absolute; top: -12px; right: 24px; background: var(--acc); color: #080810; font-size: 11px; font-weight: 700; padding: 3px 12px; border-radius: 100px; }
+.pricing-name { font-size: 13px; color: var(--tx2); margin-bottom: 10px; font-weight: 500; }
+.pricing-price { font-size: 36px; font-weight: 900; color: var(--tx); line-height: 1; margin-bottom: 3px; }
+.pricing-price span { font-size: 15px; font-weight: 400; color: var(--tx2); }
+.pricing-period { font-size: 11px; color: var(--tx2); margin-bottom: 24px; }
+.pricing-features { list-style: none; margin-bottom: 24px; }
+.pricing-features li { display: flex; align-items: center; gap: 9px; font-size: 12px; color: var(--tx2); padding: 6px 0; border-bottom: 1px solid var(--brd); }
+.pricing-features li:last-child { border-bottom: none; }
+.pricing-features li .check { color: var(--ok); font-size: 13px; flex-shrink: 0; }
+.pricing-btn { display: block; width: 100%; text-align: center; padding: 12px; border-radius: 8px; font-family: 'Noto Kufi Arabic', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; text-decoration: none; transition: all 0.2s; }
+.pricing-btn.primary { background: var(--acc); color: #080810; border: none; }
+.pricing-btn.primary:hover { background: var(--acc2); }
+.pricing-btn.secondary { background: transparent; color: var(--tx2); border: 1px solid var(--brd2); }
+.pricing-btn.secondary:hover { border-color: var(--acc); color: var(--acc); }
+
+/* CREDIT */
+.credit-box { max-width: 500px; margin: 28px auto 0; background: var(--car); border: 1px solid var(--brd2); border-radius: 12px; padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+.credit-icon { font-size: 28px; flex-shrink: 0; }
+.credit-text { font-size: 13px; color: var(--tx2); line-height: 1.6; }
+.credit-text strong { color: var(--acc); }
+
+/* BETA */
+.beta-section { background: linear-gradient(135deg, var(--sur) 0%, rgba(112,96,192,0.08) 100%); border: 1px solid rgba(112,96,192,0.2); border-radius: 20px; padding: 60px 40px; text-align: center; }
+.beta-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(112,96,192,0.15); border: 1px solid rgba(112,96,192,0.3); border-radius: 100px; padding: 6px 16px; font-size: 12px; color: #9080e0; margin-bottom: 20px; }
+.beta-title { font-size: clamp(22px, 3.5vw, 32px); font-weight: 800; color: var(--tx); margin-bottom: 12px; }
+.beta-sub { font-size: 14px; color: var(--tx2); margin-bottom: 28px; max-width: 480px; margin-left: auto; margin-right: auto; }
+.beta-perks { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+.beta-perk { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--tx2); }
+.beta-perk .dot { width: 6px; height: 6px; border-radius: 50%; background: #9080e0; }
+
+/* CTA */
+.cta-section { text-align: center; background: linear-gradient(135deg, var(--sur) 0%, rgba(200,160,80,0.06) 100%); border: 1px solid var(--brd2); border-radius: 24px; padding: 80px 40px; position: relative; overflow: hidden; }
+.cta-section::before { content: ''; position: absolute; top: -100px; left: 50%; transform: translateX(-50%); width: 400px; height: 400px; background: radial-gradient(circle, rgba(200,160,80,0.08) 0%, transparent 70%); pointer-events: none; }
+.cta-title { font-size: clamp(26px, 4vw, 42px); font-weight: 900; color: var(--tx); margin-bottom: 14px; letter-spacing: -0.02em; }
+.cta-sub { font-size: 15px; color: var(--tx2); margin-bottom: 34px; }
+
+/* FOOTER */
+footer { border-top: 1px solid var(--brd); padding: 40px 0; text-align: center; }
+.footer-logo { font-size: 15px; font-weight: 700; color: var(--tx); margin-bottom: 8px; }
+.footer-sub { font-size: 12px; color: var(--tx3); }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+  .hero-visual { display: none; }
+  .features-grid { grid-template-columns: 1fr; }
+  .types-grid { grid-template-columns: 1fr; }
+  .pricing-grid { grid-template-columns: 1fr; }
+  .hero-stats { gap: 24px; }
+  .steps::before { display: none; }
+  .beta-section { padding: 40px 24px; }
+  .cta-section { padding: 60px 24px; }
+}
+@media (max-width: 600px) {
+  .hero-cta-group { flex-direction: column; }
+  .btn-primary, .btn-secondary { text-align: center; justify-content: center; }
+}
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--brd2); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-dot"></div>
+    استوديو البودكاست
+  </a>
+  <div style="display:flex;gap:12px;align-items:center;">
+    <a href="#pricing" style="color:var(--tx2);text-decoration:none;font-size:13px;font-weight:600;">الأسعار</a>
+    <a href="https://podcast-studio-lztg.vercel.app" class="nav-cta">ابدأ مجاناً</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div style="max-width:560px;">
+      <div class="hero-badge animate-1">✦ &nbsp; أداة ذكية للبودكاسترز العرب</div>
+      <h1 class="hero-title animate-2">
+        من الفكرة إلى<br>
+        <span class="accent">السكريبت الجاهز</span><br>
+        في دقائق
+      </h1>
+      <p class="hero-sub animate-3">
+        لا تبدأ من صفحة بيضاء. استوديو البودكاست يكتب السكريبت بأسلوبك، وينصحك بالإنتاج، ويجهّز محتوى التسويق — كل شيء في مكان واحد.
+      </p>
+      <div class="hero-cta-group animate-4">
+        <a href="https://podcast-studio-lztg.vercel.app" class="btn-primary">ابدأ مجاناً ←</a>
+        <a href="#how" class="btn-secondary">كيف تعمل؟</a>
+      </div>
+      <div class="hero-stats animate-4">
+        <div class="stat-item">
+          <div class="stat-num">٣<span> أنواع</span></div>
+          <div class="stat-label">فردي · جماعي · حواري</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">٤<span> خطوات</span></div>
+          <div class="stat-label">من الفكرة للنشر</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num">١<span> دقيقة</span></div>
+          <div class="stat-label">لتوليد سكريبت كامل</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mock -->
+    <div class="hero-visual float">
+      <div class="mock-app">
+        <div class="mock-header">
+          <div class="mock-dots">
+            <div class="mock-dot" style="background:#ff5f57"></div>
+            <div class="mock-dot" style="background:#ffbd2e"></div>
+            <div class="mock-dot" style="background:#28ca41"></div>
+          </div>
+          <div style="font-size:10px;color:var(--tx2);margin-right:8px;">استوديو البودكاست</div>
+        </div>
+        <div class="mock-nav">
+          <div class="mock-tab active">إنشاء</div>
+          <div class="mock-tab">الإنتاج</div>
+          <div class="mock-tab">التسويق</div>
+          <div class="mock-tab">حلقاتي</div>
+        </div>
+        <div class="mock-body">
+          <div style="font-size:12px;font-weight:700;color:var(--tx);margin-bottom:10px;">◎ هوية البودكاست</div>
+          <div class="mock-field">اسم البودكاست...</div>
+          <div class="mock-type-grid">
+            <div class="mock-type active">◎<br>فردي</div>
+            <div class="mock-type">◈<br>جماعي</div>
+            <div class="mock-type">◇<br>حواري</div>
+          </div>
+          <div class="mock-field">موضوع الحلقة...</div>
+          <div class="mock-btn">توليد السكريبت ←</div>
+          <div class="mock-result">
+            <div style="font-size:9px;color:var(--acc);margin-bottom:6px;">✦ السكريبت المولّد</div>
+            <div class="mock-line" style="width:100%"></div>
+            <div class="mock-line" style="width:85%"></div>
+            <div class="mock-line" style="width:92%"></div>
+            <div class="mock-line" style="width:70%"></div>
+            <div class="mock-line" style="width:88%"></div>
+            <div class="mock-line" style="width:76%"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PODCAST TYPES -->
+<section class="section" id="types">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">أنواع البودكاست</div>
+      <h2 class="section-title">لكل بودكاست أسلوبه</h2>
+      <p class="section-sub">الأداة تتكيف مع نوع بودكاستك وتولّد المحتوى المناسب لكل حالة</p>
+    </div>
+    <div class="types-grid">
+      <div class="type-card" style="border-color:rgba(61,158,143,0.3);">
+        <div class="type-icon">◎</div>
+        <div class="type-name" style="color:#3d9e8f;">فردي</div>
+        <div class="type-desc">مذيع واحد يقدم المحتوى بمفرده بأسلوبه الخاص</div>
+        <ul class="type-features">
+          <li>سكريبت كامل جاهز للتسجيل</li>
+          <li>مقدمة + موضوع + خاتمة</li>
+          <li>علامات [توقف] للانتقالات</li>
+          <li>بأسلوبك الشخصي المحفوظ</li>
+        </ul>
+      </div>
+      <div class="type-card" style="border-color:rgba(112,96,192,0.3);">
+        <div class="type-icon">◈</div>
+        <div class="type-name" style="color:#7060c0;">جماعي</div>
+        <div class="type-desc">أكثر من مذيع يناقشون موضوعاً واحداً معاً</div>
+        <ul class="type-features">
+          <li>حوار موزع على 2–5 مذيعين</li>
+          <li>لكل مذيع دوره ووجهة نظره</li>
+          <li>نقاط توافق وخلاف حقيقية</li>
+          <li>مقدمة وخاتمة مشتركة</li>
+        </ul>
+      </div>
+      <div class="type-card" style="border-color:rgba(192,80,64,0.3);">
+        <div class="type-icon">◇</div>
+        <div class="type-name" style="color:#c05040;">حواري</div>
+        <div class="type-desc">استضافة ضيف والتحاور معه حول موضوع محدد</div>
+        <ul class="type-features">
+          <li>أسئلة تمهيدية للتعارف</li>
+          <li>أسئلة جوهرية متدرجة</li>
+          <li>أسئلة استفزازية مدروسة</li>
+          <li>سؤال ختامي مميز</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" style="background:linear-gradient(180deg,transparent,var(--sur) 20%,var(--sur) 80%,transparent);">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">المميزات</div>
+      <h2 class="section-title">أكثر من مجرد سكريبت</h2>
+      <p class="section-sub">أداة متكاملة تغطي كل مراحل إنتاج البودكاست</p>
+    </div>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">✦</span>
+        <div class="feature-title">سكريبت بأسلوبك الشخصي</div>
+        <div class="feature-desc">أدخل مقطعاً من حلقة سابقة والأداة تتعرف على أسلوبك وتكتب كل سكريبت بنفس نبرتك ولغتك.</div>
+        <span class="feature-tag" style="background:rgba(200,160,80,0.1);color:var(--acc);">✦ ميزة حصرية</span>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">◉</span>
+        <div class="feature-title">نصائح إنتاج مخصصة</div>
+        <div class="feature-desc">صوتي أو مرئي — توصيات دقيقة لوضع الميكروفون والإضاءة والكاميرا واقتراح الموسيقى المناسبة لموضوعك.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">◐</span>
+        <div class="feature-title">محتوى تسويقي جاهز</div>
+        <div class="feature-desc">وصف الحلقة، منشورات تويتر وانستقرام ولينكدإن، نشرة بريدية، وعناوين بديلة — جاهزة للنسخ والنشر.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">▦</span>
+        <div class="feature-title">حفظ الحلقات</div>
+        <div class="feature-desc">كل حلقة محفوظة في حسابك مع السكريبت والمحتوى التسويقي — قابلة للتنزيل كملف متكامل في أي وقت.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">👤</span>
+        <div class="feature-title">ملف شخصي كامل</div>
+        <div class="feature-desc">حساب خاص بك يحفظ اسمك وبودكاستك وأسلوبك — تجربة مخصصة في كل زيارة.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <div class="feature-title">سريع وبسيط</div>
+        <div class="feature-desc">لا تثبيت ولا إعداد معقد — افتح الموقع وابدأ. السكريبت الكامل جاهز في أقل من دقيقتين.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section" id="how">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">كيف تعمل</div>
+      <h2 class="section-title">أربع خطوات بسيطة</h2>
+      <p class="section-sub">من فكرة في رأسك إلى محتوى جاهز للتسجيل والنشر</p>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">١</div>
+        <div class="step-content">
+          <div class="step-title">أنشئ حسابك وأدخل معلوماتك</div>
+          <div class="step-desc">سجّل بريدك الإلكتروني، أدخل اسمك واسم بودكاستك. إذا أردت أضف مقطعاً من حلقة سابقة لتحفظ أسلوبك الشخصي مرة واحدة فقط.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">٢</div>
+        <div class="step-content">
+          <div class="step-title">حدد نوع البودكاست وتفاصيل الحلقة</div>
+          <div class="step-desc">اختر فردي أو جماعي أو حواري، حدد المدة وتكرار النشر، ثم اكتب موضوع الحلقة — يمكن أن يكون فكرة بسيطة أو وصفاً مفصلاً.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">٣</div>
+        <div class="step-content">
+          <div class="step-title">ولّد السكريبت ونصائح الإنتاج</div>
+          <div class="step-desc">بضغطة واحدة يُولَّد سكريبت كامل بأسلوبك، مع توصيات مخصصة لاستوديوك سواء كان صوتياً أو مرئياً.</div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">٤</div>
+        <div class="step-content">
+          <div class="step-title">انشر وسوّق في ثوانٍ</div>
+          <div class="step-desc">ولّد كل محتوى التسويق — وصف الحلقة، منشورات السوشيال، النشرة البريدية — ثم نزّل ملفاً شاملاً يحتوي كل شيء.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section" id="pricing">
+  <div class="container">
+    <div class="section-header">
+      <div class="section-tag">الأسعار</div>
+      <h2 class="section-title">بسيط وشفاف</h2>
+      <p class="section-sub">ابدأ مجاناً، ادفع فقط عندما تحتاج أكثر</p>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-name">الباقة المجانية</div>
+        <div class="pricing-price">٠ <span>ريال</span></div>
+        <div class="pricing-period">للأبد — بدون بطاقة ائتمان</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> حلقة واحدة كل شهر</li>
+          <li><span class="check">✓</span> كل أنواع البودكاست</li>
+          <li><span class="check">✓</span> سكريبت كامل بأسلوبك</li>
+          <li><span class="check">✓</span> نصائح الإنتاج</li>
+          <li><span class="check">✓</span> محتوى التسويق كاملاً</li>
+          <li><span class="check">✓</span> ملف الأسلوب الشخصي</li>
+          <li><span class="check">✓</span> حفظ الحلقات</li>
+        </ul>
+        <a href="https://podcast-studio-lztg.vercel.app" class="pricing-btn secondary">ابدأ مجاناً</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-badge">الأكثر شيوعاً</div>
+        <div class="pricing-name">الباقة المدفوعة</div>
+        <div class="pricing-price">٣٩ <span>ريال</span></div>
+        <div class="pricing-period">شهرياً — إلغاء في أي وقت</div>
+        <ul class="pricing-features">
+          <li><span class="check">✓</span> <strong>٤ حلقات كل شهر</strong></li>
+          <li><span class="check">✓</span> كل مميزات المجانية</li>
+          <li><span class="check">✓</span> حلقات إضافية بـ 1$ للحلقة</li>
+          <li><span class="check">✓</span> أولوية في التوليد</li>
+          <li><span class="check">✓</span> دعم مباشر</li>
+          <li><span class="check">✓</span> تحديثات مستمرة</li>
+          <li><span class="check">✓</span> إلغاء في أي وقت</li>
+        </ul>
+        <a href="https://podcaststudio.gumroad.com/l/pro" class="pricing-btn primary" target="_blank">اشترك الآن ←</a>
+      </div>
+    </div>
+
+    <!-- Credit box -->
+    <div class="credit-box">
+      <div class="credit-icon">⚡</div>
+      <div class="credit-text">
+        <strong>حلقات إضافية للمشتركين</strong> — انتهت حلقاتك الشهرية؟ اشترِ حلقات إضافية بـ <strong>1$ للحلقة</strong> فقط كمشترك مدفوع. لا حاجة للانتظار حتى الشهر القادم.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- BETA -->
+<section class="section">
+  <div class="container">
+    <div class="beta-section">
+      <div class="beta-badge">🎙 برنامج التجربة المبكرة</div>
+      <h2 class="beta-title">بودكاستر؟ جرّب الأداة مجاناً</h2>
+      <p class="beta-sub">نختار عدداً محدوداً من البودكاسترز لتجربة الأداة كاملاً مجاناً مقابل ملاحظاتهم. ٣٠ يوماً · ١٠ حلقات · بدون بطاقة ائتمان.</p>
+      <div class="beta-perks">
+        <div class="beta-perk"><div class="dot"></div> ٣٠ يوماً كاملة</div>
+        <div class="beta-perk"><div class="dot"></div> ١٠ حلقات مجانية</div>
+        <div class="beta-perk"><div class="dot"></div> دعم مباشر</div>
+        <div class="beta-perk"><div class="dot"></div> تأثير على التطوير</div>
+      </div>
+      <a href="https://podcast-studio-lztg.vercel.app" class="btn-primary" style="background:#7060c0;">سجّل للتجربة المبكرة ←</a>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="section">
+  <div class="container">
+    <div class="cta-section">
+      <div class="section-tag" style="margin-bottom:18px;">ابدأ الآن</div>
+      <h2 class="cta-title">جاهز لحلقتك القادمة؟</h2>
+      <p class="cta-sub">انضم للبودكاسترز الذين يوفرون ساعات في تحضير كل حلقة</p>
+      <a href="https://podcast-studio-lztg.vercel.app" class="btn-primary" style="font-size:16px;padding:17px 40px;">
+        ابدأ مجاناً — بدون بطاقة ائتمان ←
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-logo">✦ استوديو البودكاست</div>
+    <div class="footer-sub">أداة ذكية للبودكاسترز العرب · من الفكرة إلى النشر</div>
+  </div>
+</footer>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.style.opacity = '1';
+      entry.target.style.transform = 'translateY(0)';
+    }
+  });
+}, { threshold: 0.1 });
+
+document.querySelectorAll('.feature-card, .step, .pricing-card, .type-card').forEach(el => {
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(20px)';
+  el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+  observer.observe(el);
+});
+</script>
+
+</body>
+</html>
