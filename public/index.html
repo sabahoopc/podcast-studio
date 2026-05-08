@@ -290,9 +290,13 @@ const AuthScreen = ({onAuth}) => {
         if(error)throw new Error(error.message);
         onAuth(data.user);
       } else if(mode==="signup"){
-        const{error}=await sb.auth.signUp({email,password});
+        const{data,error}=await sb.auth.signUp({email,password});
         if(error)throw new Error(error.message);
-        setMsg({text:"تم إنشاء الحساب — تحقق من بريدك لتفعيل الحساب",ok:true});
+        if(data?.user){
+          await sb.from("usage").upsert({user_id:data.user.id,episodes_used:0,plan:"free",credits:0});
+          await sb.from("profiles").upsert({id:data.user.id,email});
+        }
+        setMsg({text:"تم إنشاء الحساب — يمكنك تسجيل الدخول الآن",ok:true});
       } else {
         const{error}=await sb.auth.resetPasswordForEmail(email);
         if(error)throw new Error(error.message);
