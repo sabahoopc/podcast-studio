@@ -10,8 +10,21 @@
 html,body{background:#0d0d14!important;min-height:100vh;}
 body{font-family:'Noto Kufi Arabic',sans-serif;direction:rtl;color:#e2ddd4;}
 ::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:4px;}
-@keyframes spin{to{transform:rotate(360deg);}}
-@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.fade { animation: fadeIn 0.3s ease forwards; }
+
+@media (max-width: 768px) {
+  .sidebar { position: relative !important; width: 100% !important; border-left: none !important; border-bottom: 1px solid #252535 !important; flex-direction: row !important; flex-wrap: wrap !important; padding: 16px !important; gap: 8px !important; }
+  .sidebar-info { width: 100% !important; margin-bottom: 8px !important; }
+  .sidebar nav { flex-direction: row !important; width: 100% !important; overflow-x: auto !important; }
+  .sidebar-footer { display: none !important; }
+  .main-content { margin-right: 0 !important; padding: 16px !important; }
+  .stats-grid { grid-template-columns: 1fr 1fr !important; }
+  .export-grid { grid-template-columns: 1fr !important; }
+  table { font-size: 11px !important; }
+  th, td { padding: 8px 6px !important; }
+}
 .fade{animation:fadeIn 0.3s ease forwards;}
 </style>
 </head>
@@ -129,8 +142,8 @@ const Dashboard=({user,onLogout})=>{
   return(
     <div style={{minHeight:"100vh",background:T.bg,display:"flex"}}>
       {/* Sidebar */}
-      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"230px",background:T.sur,borderLeft:`1px solid ${T.brd}`,display:"flex",flexDirection:"column",padding:"28px 16px",zIndex:100}}>
-        <div style={{marginBottom:"32px"}}>
+      <div className="sidebar" style={{position:"fixed",top:0,right:0,bottom:0,width:"230px",background:T.sur,borderLeft:`1px solid ${T.brd}`,display:"flex",flexDirection:"column",padding:"28px 16px",zIndex:100}}>
+        <div className="sidebar-info" style={{marginBottom:"32px"}}>
           <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px"}}>
             <div style={{width:"8px",height:"8px",borderRadius:"50%",background:T.acc,boxShadow:`0 0 8px ${T.acc}`}}/>
             <span style={{fontSize:"11px",color:T.tx2,letterSpacing:"0.1em"}}>PODCAST STUDIO</span>
@@ -141,20 +154,20 @@ const Dashboard=({user,onLogout})=>{
         <nav style={{flex:1,display:"flex",flexDirection:"column",gap:"4px"}}>
           {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?T.accL:"transparent",border:`1px solid ${tab===t.id?T.acc:T.brd}`,borderRadius:"8px",padding:"11px 14px",cursor:"pointer",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"600",fontSize:"13px",textAlign:"right",display:"flex",alignItems:"center",gap:"8px",transition:"all 0.2s"}}><span>{t.ic}</span>{t.l}</button>))}
         </nav>
-        <div style={{borderTop:`1px solid ${T.brd}`,paddingTop:"16px",display:"flex",flexDirection:"column",gap:"8px"}}>
+        <div className="sidebar-footer" style={{borderTop:`1px solid ${T.brd}`,paddingTop:"16px",display:"flex",flexDirection:"column",gap:"8px"}}>
           <a href="/app" style={{display:"block",padding:"10px 14px",borderRadius:"8px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"12px",textAlign:"center",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>← العودة للأداة</a>
           <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"10px 14px",borderRadius:"8px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"12px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>تسجيل الخروج</button>
         </div>
       </div>
 
       {/* Content */}
-      <div style={{marginRight:"230px",padding:"32px",flex:1,minWidth:0}}>
+      <div className="main-content" style={{marginRight:"230px",padding:"32px",flex:1,minWidth:0}}>
         {msg.text&&<Alert text={msg.text} type={msg.type}/>}
 
         {/* OVERVIEW */}
         {tab==="overview"&&<div className="fade">
           <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>نظرة عامة</div><div style={{color:T.tx2,fontSize:"13px"}}>إحصاءات استوديو البودكاست</div></div>
-          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px",marginBottom:"28px"}}>
+          <div className="stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px",marginBottom:"28px"}}>
             <StatCard ic="👥" l="إجمالي المستخدمين" v={stats.total} c={T.acc}/>
             <StatCard ic="🆓" l="باقة مجانية" v={stats.free} c={T.tx2}/>
             <StatCard ic="💎" l="باقة مدفوعة" v={stats.pro} c={T.ok}/>
@@ -225,7 +238,7 @@ const Dashboard=({user,onLogout})=>{
         {/* EXPORT */}
         {tab==="export"&&<div className="fade">
           <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>تصدير البيانات</div><div style={{color:T.tx2,fontSize:"13px"}}>تصدير وإحصاءات المشتركين</div></div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"20px"}}>
+          <div className="export-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"20px"}}>
             <Card>
               <div style={{fontSize:"28px",marginBottom:"10px"}}>📊</div>
               <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>تصدير كل المشتركين</div>
