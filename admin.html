@@ -3,28 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>لوحة الأدمن</title>
+<title>لوحة الأدمن — استوديو البودكاست</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html,body{background:#0d0d14!important;min-height:100vh;}
 body{font-family:'Noto Kufi Arabic',sans-serif;direction:rtl;color:#e2ddd4;}
-::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:4px;}
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.fade { animation: fadeIn 0.3s ease forwards; }
-
-@media (max-width: 768px) {
-  .sidebar { position: relative !important; width: 100% !important; border-left: none !important; border-bottom: 1px solid #252535 !important; flex-direction: row !important; flex-wrap: wrap !important; padding: 16px !important; gap: 8px !important; }
-  .sidebar-info { width: 100% !important; margin-bottom: 8px !important; }
-  .sidebar nav { flex-direction: row !important; width: 100% !important; overflow-x: auto !important; }
-  .sidebar-footer { display: none !important; }
-  .main-content { margin-right: 0 !important; padding: 16px !important; }
-  .stats-grid { grid-template-columns: 1fr 1fr !important; }
-  .export-grid { grid-template-columns: 1fr !important; }
-  table { font-size: 11px !important; }
-  th, td { padding: 8px 6px !important; }
-}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:4px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
 .fade{animation:fadeIn 0.3s ease forwards;}
 </style>
 </head>
@@ -40,18 +27,20 @@ const SB_URL="https://qawyirrrprjcklwxgzqu.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
 const sb=supabase.createClient(SB_URL,SB_KEY);
 const ADMIN="sabahoo.pc@gmail.com";
+
 const T={bg:"#0d0d14",sur:"#13131e",car:"#1a1a28",brd:"#252535",brd2:"#2e2e42",acc:"#c8a050",accL:"rgba(200,160,80,0.12)",tx:"#e2ddd4",tx2:"#8a8599",tx3:"#4a4860",ok:"#3d9e6f",warn:"#c8a050",err:"#c05040"};
 const IS={width:"100%",background:T.bg,border:`1px solid ${T.brd}`,borderRadius:"8px",padding:"11px 14px",color:T.tx,fontFamily:"'Noto Kufi Arabic',sans-serif",fontSize:"14px",direction:"rtl",outline:"none",boxSizing:"border-box"};
 
+const useIsMobile=()=>{const[m,setM]=useState(window.innerWidth<768);useEffect(()=>{const h=()=>setM(window.innerWidth<768);window.addEventListener("resize",h);return()=>window.removeEventListener("resize",h);},[]);return m;};
+
 const Field=({label,children})=>(<div style={{marginBottom:"16px"}}><div style={{fontSize:"11px",letterSpacing:"0.12em",color:T.tx2,textTransform:"uppercase",marginBottom:"7px"}}>{label}</div>{children}</div>);
-const Inp=({value,onChange,placeholder,type="text"})=>(<input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>);
 const Btn=({children,onClick,disabled,variant="ghost",color,full,small})=>{
   const v=variant==="fill"?{background:color||T.acc,border:"none",color:"#0d0d14"}:variant==="outline"?{background:"transparent",border:`1px solid ${color||T.brd2}`,color:color||T.tx2}:{background:T.car,border:`1px solid ${T.brd}`,color:T.tx2};
   return <button onClick={onClick} disabled={disabled} style={{...v,borderRadius:"8px",fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:small?"12px":"14px",padding:small?"7px 14px":"11px 22px",cursor:disabled?"not-allowed":"pointer",opacity:disabled?0.4:1,width:full?"100%":"auto"}}>{children}</button>;
 };
-const Card=({children,style={}})=>(<div style={{background:T.car,border:`1px solid ${T.brd}`,borderRadius:"12px",padding:"22px",...style}}>{children}</div>);
+const Card=({children,style={}})=>(<div style={{background:T.car,border:`1px solid ${T.brd}`,borderRadius:"12px",padding:"20px",...style}}>{children}</div>);
 const Spin=()=>(<div style={{textAlign:"center",padding:"48px"}}><div style={{width:"32px",height:"32px",border:`2px solid ${T.brd2}`,borderTop:`2px solid ${T.acc}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}/><div style={{color:T.tx2,fontSize:"13px"}}>جارٍ التحميل...</div></div>);
-const Alert=({text,type="error"})=>{const c=type==="ok"?T.ok:type==="warn"?T.warn:T.err;return <div style={{padding:"10px 14px",borderRadius:"8px",fontSize:"13px",marginBottom:"16px",background:c+"20",border:`1px solid ${c}40`,color:type==="ok"?T.ok:type==="warn"?"#e8c070":"#e07060"}}>{text}</div>;};
+const Alrt=({text,type="error"})=>{const c=type==="ok"?T.ok:type==="warn"?T.warn:T.err;return <div style={{padding:"10px 14px",borderRadius:"8px",fontSize:"13px",marginBottom:"14px",background:c+"20",border:`1px solid ${c}40`,color:type==="ok"?T.ok:type==="warn"?"#e8c070":"#e07060"}}>{text}</div>;};
 const PlanBadge=({plan,betaExpires})=>{
   const exp=plan==="beta"&&betaExpires&&new Date(betaExpires)<new Date();
   const cfg={free:{l:"مجانية",c:T.tx3,bg:"rgba(74,72,96,0.2)"},pro:{l:"مدفوعة",c:T.ok,bg:"rgba(61,158,111,0.15)"},beta:exp?{l:"beta منتهية",c:T.err,bg:"rgba(192,80,64,0.15)"}:{l:"تجربة مبكرة",c:T.warn,bg:"rgba(200,160,80,0.15)"}};
@@ -59,27 +48,40 @@ const PlanBadge=({plan,betaExpires})=>{
   return <span style={{fontSize:"11px",fontWeight:"700",padding:"3px 10px",borderRadius:"5px",background:s.bg,color:s.c}}>{s.l}</span>;
 };
 
-const LoginScreen=({onLogin})=>{
-  const [email,setEmail]=useState("");const [pw,setPw]=useState("");const [busy,setBusy]=useState(false);const [err,setErr]=useState("");
-  const login=async()=>{
-    setBusy(true);setErr("");
-    try{const{data,error}=await sb.auth.signInWithPassword({email,password:pw});if(error)throw new Error(error.message);if(data.user?.email!==ADMIN)throw new Error("ليس لديك صلاحية الوصول");onLogin(data.user);}
-    catch(e){setErr(e.message);}setBusy(false);
-  };
-  return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",background:T.bg}}><div style={{width:"100%",maxWidth:"400px"}} className="fade"><div style={{textAlign:"center",marginBottom:"36px"}}><div style={{fontSize:"40px",marginBottom:"12px"}}>⚙</div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>لوحة الأدمن</div><div style={{color:T.tx2,fontSize:"13px"}}>استوديو البودكاست</div></div><Card>{err&&<Alert text={err}/>}<Field label="البريد الإلكتروني"><Inp value={email} onChange={setEmail} placeholder="admin@email.com" type="email"/></Field><Field label="كلمة المرور"><Inp value={pw} onChange={setPw} placeholder="••••••••" type="password"/></Field><Btn variant="fill" full disabled={!email||!pw||busy} onClick={login}>{busy?"جارٍ الدخول...":"دخول"}</Btn></Card></div></div>);
+// Login
+const Login=({onLogin})=>{
+  const[email,setEmail]=useState("");const[pw,setPw]=useState("");const[busy,setBusy]=useState(false);const[err,setErr]=useState("");
+  const go=async()=>{setBusy(true);setErr("");try{const{data,error}=await sb.auth.signInWithPassword({email,password:pw});if(error)throw new Error(error.message);if(data.user?.email!==ADMIN)throw new Error("ليس لديك صلاحية الوصول");onLogin(data.user);}catch(e){setErr(e.message);}setBusy(false);};
+  return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",background:T.bg}}>
+    <div style={{width:"100%",maxWidth:"380px"}} className="fade">
+      <div style={{textAlign:"center",marginBottom:"32px"}}>
+        <div style={{fontSize:"44px",marginBottom:"10px"}}>⚙</div>
+        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>لوحة الأدمن</div>
+        <div style={{color:T.tx2,fontSize:"13px"}}>استوديو البودكاست</div>
+      </div>
+      <Card>
+        {err&&<Alrt text={err}/>}
+        <Field label="البريد الإلكتروني"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@email.com" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+        <Field label="كلمة المرور"><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+        <Btn variant="fill" full disabled={!email||!pw||busy} onClick={go}>{busy?"جارٍ الدخول...":"دخول"}</Btn>
+      </Card>
+    </div>
+  </div>);
 };
 
+// Dashboard
 const Dashboard=({user,onLogout})=>{
-  const [tab,setTab]=useState("overview");
-  const [users,setUsers]=useState([]);
-  const [loading,setLoading]=useState(true);
-  const [stats,setStats]=useState({total:0,free:0,pro:0,beta:0,episodes:0,credits:0});
-  const [msg,setMsg]=useState({text:"",type:"ok"});
-  const [search,setSearch]=useState("");
-  const [filterPlan,setFilterPlan]=useState("");
-  const [editUser,setEditUser]=useState(null);
-  const [ef,setEf]=useState({});
-  const [saving,setSaving]=useState(false);
+  const isMobile=useIsMobile();
+  const[tab,setTab]=useState("overview");
+  const[users,setUsers]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[stats,setStats]=useState({total:0,free:0,pro:0,beta:0,episodes:0,credits:0});
+  const[msg,setMsg]=useState({text:"",type:"ok"});
+  const[search,setSearch]=useState("");
+  const[filterPlan,setFilterPlan]=useState("");
+  const[editUser,setEditUser]=useState(null);
+  const[ef,setEf]=useState({});
+  const[saving,setSaving]=useState(false);
 
   useEffect(()=>{load();},[]);
 
@@ -89,10 +91,10 @@ const Dashboard=({user,onLogout})=>{
       const{data:u}=await sb.from("usage").select("*");
       const{data:p}=await sb.from("profiles").select("*");
       const pm={};(p||[]).forEach(x=>{pm[x.id]=x;});
-      const combined=(u||[]).map(x=>({...x,profile:pm[x.user_id]||{}}));
-      setUsers(combined);
-      const s={total:combined.length,free:0,pro:0,beta:0,episodes:0,credits:0};
-      combined.forEach(x=>{if(x.plan==="pro")s.pro++;else if(x.plan==="beta")s.beta++;else s.free++;s.episodes+=(x.episodes_used||0);s.credits+=(x.credits||0);});
+      const c=(u||[]).map(x=>({...x,profile:pm[x.user_id]||{}}));
+      setUsers(c);
+      const s={total:c.length,free:0,pro:0,beta:0,episodes:0,credits:0};
+      c.forEach(x=>{if(x.plan==="pro")s.pro++;else if(x.plan==="beta")s.beta++;else s.free++;s.episodes+=(x.episodes_used||0);s.credits+=(x.credits||0);});
       setStats(s);
     }catch(e){flash("خطأ: "+e.message,"error");}
     setLoading(false);
@@ -119,13 +121,18 @@ const Dashboard=({user,onLogout})=>{
     catch(e){flash("خطأ: "+e.message,"error");}
   };
 
-  const exportCSV=()=>{
-    const rows=[["الاسم","البريد","البودكاست","الباقة","الاستخدام","الكريديت","الملاحظات","التسجيل"]];
-    users.forEach(u=>rows.push([`${u.profile.first_name||""} ${u.profile.last_name||""}`.trim(),u.profile.email||"",u.profile.podcast_name||"",u.plan||"free",u.episodes_used||0,u.credits||0,u.notes||"",new Date(u.created_at).toLocaleDateString("ar-SA")]));
+  const exportCSV=(type)=>{
+    const list=type==="offers"?users.filter(u=>u.profile.accept_offers):users;
+    const rows=type==="offers"?[["الاسم","البريد","البودكاست"]]:
+      [["الاسم","البريد","البودكاست","الباقة","الاستخدام","الكريديت","الملاحظات","التسجيل"]];
+    list.forEach(u=>{
+      if(type==="offers")rows.push([`${u.profile.first_name||""} ${u.profile.last_name||""}`.trim(),u.profile.email||"",u.profile.podcast_name||""]);
+      else rows.push([`${u.profile.first_name||""} ${u.profile.last_name||""}`.trim(),u.profile.email||"",u.profile.podcast_name||"",u.plan||"free",u.episodes_used||0,u.credits||0,u.notes||"",new Date(u.created_at).toLocaleDateString("ar-SA")]);
+    });
     const csv=rows.map(r=>r.join(",")).join("\n");
     const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
-    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="subscribers.csv";a.click();URL.revokeObjectURL(url);
-    flash("✓ تم التصدير","ok");
+    const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=type==="offers"?"offers.csv":"subscribers.csv";a.click();URL.revokeObjectURL(url);
+    flash(`✓ تم تصدير ${list.length} سجل`,"ok");
   };
 
   const filtered=users.filter(u=>{
@@ -135,39 +142,181 @@ const Dashboard=({user,onLogout})=>{
 
   const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
 
-  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"export",l:"تصدير البيانات",ic:"📤"}];
+  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"export",l:"تصدير",ic:"📤"}];
 
-  const StatCard=({ic,l,v,c})=>(<Card style={{padding:"20px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"24px"}}>{ic}</span><span style={{fontSize:"30px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
+  const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
 
+  // Mobile layout
+  if(isMobile){
+    return(
+      <div style={{minHeight:"100vh",background:T.bg,paddingBottom:"70px"}}>
+        {/* Header */}
+        <div style={{background:T.sur,borderBottom:`1px solid ${T.brd}`,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50}}>
+          <div>
+            <div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>⚙ لوحة الأدمن</div>
+            <div style={{fontSize:"11px",color:T.tx3,marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"200px"}}>{user.email}</div>
+          </div>
+          <div style={{display:"flex",gap:"8px"}}>
+            <a href="/app" style={{padding:"7px 12px",borderRadius:"7px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"11px",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>الأداة</a>
+            <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"7px 12px",borderRadius:"7px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"11px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>خروج</button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div style={{padding:"16px"}}>
+          {msg.text&&<Alrt text={msg.text} type={msg.type}/>}
+
+          {/* OVERVIEW */}
+          {tab==="overview"&&<div className="fade">
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"16px"}}>
+              <StatCard ic="👥" l="إجمالي المستخدمين" v={stats.total} c={T.acc}/>
+              <StatCard ic="🆓" l="مجانية" v={stats.free} c={T.tx2}/>
+              <StatCard ic="💎" l="مدفوعة" v={stats.pro} c={T.ok}/>
+              <StatCard ic="🧪" l="تجربة مبكرة" v={stats.beta} c={T.warn}/>
+              <StatCard ic="🎙️" l="حلقات مولّدة" v={stats.episodes} c={T.acc}/>
+              <StatCard ic="⚡" l="كريديت متبقٍ" v={stats.credits} c={T.warn}/>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
+              <div style={{fontSize:"14px",fontWeight:"700",color:T.tx}}>آخر المسجلين</div>
+              <Btn small variant="outline" onClick={load}>↻</Btn>
+            </div>
+            {loading?<Spin/>:(
+              <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                {users.slice(0,8).map(u=>(<Card key={u.user_id} style={{padding:"14px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"6px"}}>
+                    <div style={{fontWeight:"700",color:T.tx,fontSize:"14px"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</div>
+                    <PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/>
+                  </div>
+                  <div style={{color:T.tx2,fontSize:"11px",marginBottom:"4px",direction:"ltr",textAlign:"right"}}>{u.profile.email||"—"}</div>
+                  <div style={{color:T.tx2,fontSize:"11px"}}>{u.profile.podcast_name||"بدون بودكاست"} · {u.episodes_used||0} حلقة</div>
+                </Card>))}
+              </div>
+            )}
+          </div>}
+
+          {/* USERS */}
+          {tab==="users"&&<div className="fade">
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
+              <div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>{filtered.length} من {users.length}</div>
+              <Btn small variant="outline" onClick={load}>↻ تحديث</Btn>
+            </div>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث..." style={{...IS,marginBottom:"10px"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+            <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{...IS,cursor:"pointer",appearance:"none",marginBottom:"14px"}}>
+              <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option>
+            </select>
+            {loading?<Spin/>:(
+              <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+                {filtered.map(u=>{const d=betaDays(u);return(<Card key={u.user_id} style={{padding:"14px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+                    <div>
+                      <div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</div>
+                      <PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/>
+                    </div>
+                    <div style={{display:"flex",gap:"6px"}}>
+                      <Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn>
+                      <Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn>
+                    </div>
+                  </div>
+                  <div style={{color:T.tx2,fontSize:"11px",marginBottom:"3px",direction:"ltr",textAlign:"right"}}>{u.profile.email||"—"}</div>
+                  <div style={{color:T.tx2,fontSize:"11px",marginBottom:"3px"}}>{u.profile.podcast_name||"بدون بودكاست"}</div>
+                  <div style={{display:"flex",gap:"12px",marginTop:"6px"}}>
+                    <span style={{fontSize:"11px",color:T.tx2}}>استخدام: <strong style={{color:T.tx}}>{u.episodes_used||0}</strong></span>
+                    <span style={{fontSize:"11px",color:T.tx2}}>كريديت: <strong style={{color:T.acc}}>{u.credits||0}</strong></span>
+                    {d!==null&&<span style={{fontSize:"11px",color:d<3?T.err:d<7?T.warn:T.ok,fontWeight:"700"}}>{d>0?d+" يوم":"منتهية"}</span>}
+                  </div>
+                  {u.notes&&<div style={{marginTop:"6px",fontSize:"11px",color:T.tx2,background:T.bg,borderRadius:"5px",padding:"6px 8px"}}>{u.notes}</div>}
+                </Card>);})}</div>
+            )}
+          </div>}
+
+          {/* EXPORT */}
+          {tab==="export"&&<div className="fade">
+            <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>تصدير البيانات</div>
+            <div style={{display:"flex",flexDirection:"column",gap:"12px",marginBottom:"16px"}}>
+              <Card style={{padding:"16px"}}>
+                <div style={{fontSize:"22px",marginBottom:"8px"}}>📊</div>
+                <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>تصدير كل المشتركين</div>
+                <div style={{fontSize:"12px",color:T.tx2,marginBottom:"14px",lineHeight:"1.7"}}>ملف CSV بكل البيانات</div>
+                <Btn variant="fill" full onClick={()=>exportCSV("all")}>⬇ تصدير CSV</Btn>
+              </Card>
+              <Card style={{padding:"16px"}}>
+                <div style={{fontSize:"22px",marginBottom:"8px"}}>📧</div>
+                <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>قائمة العروض</div>
+                <div style={{fontSize:"12px",color:T.tx2,marginBottom:"14px",lineHeight:"1.7"}}>من وافقوا على استقبال العروض فقط</div>
+                <Btn variant="fill" full onClick={()=>exportCSV("offers")}>⬇ تصدير قائمة العروض</Btn>
+              </Card>
+            </div>
+            <Card>
+              <div style={{fontSize:"13px",fontWeight:"700",color:T.tx,marginBottom:"14px"}}>📋 ملخص</div>
+              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+                {[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"12px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"20px",fontWeight:"800",color:T.acc,marginBottom:"3px"}}>{s.v}</div><div style={{fontSize:"10px",color:T.tx2}}>{s.l}</div></div>))}
+              </div>
+            </Card>
+          </div>}
+        </div>
+
+        {/* Bottom Nav */}
+        <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.sur,borderTop:`1px solid ${T.brd}`,display:"flex",padding:"8px 0",zIndex:50}}>
+          {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"transparent",border:"none",cursor:"pointer",padding:"6px 0",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}>
+            <span style={{fontSize:"18px"}}>{t.ic}</span>
+            <span style={{fontSize:"10px",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:tab===t.id?"700":"400"}}>{t.l}</span>
+          </button>))}
+        </div>
+
+        {/* Edit Modal */}
+        {editUser&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:9999}}>
+          <div style={{background:T.sur,borderRadius:"16px 16px 0 0",width:"100%",maxHeight:"85vh",overflowY:"auto",padding:"24px 20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
+              <div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>✏️ تعديل المستخدم</div>
+              <button onClick={()=>setEditUser(null)} style={{background:"none",border:"none",color:T.tx2,fontSize:"20px",cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{color:T.tx2,fontSize:"11px",marginBottom:"16px",direction:"ltr",textAlign:"right"}}>{editUser.profile.email||""}</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>
+              <Field label="الاسم الأول"><input value={ef.fn} onChange={e=>setEf({...ef,fn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+              <Field label="الاسم الأخير"><input value={ef.ln} onChange={e=>setEf({...ef,ln:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            </div>
+            <Field label="اسم البودكاست"><input value={ef.pn} onChange={e=>setEf({...ef,pn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            <Field label="الباقة"><select value={ef.plan} onChange={e=>setEf({...ef,plan:e.target.value})} style={{...IS,cursor:"pointer",appearance:"none"}}><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option></select></Field>
+            {ef.plan==="beta"&&<Field label="مدة التجربة (أيام)"><input value={ef.betaDays} onChange={e=>setEf({...ef,betaDays:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>}
+            <Field label="الكريديت"><input value={ef.credits} onChange={e=>setEf({...ef,credits:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            <Field label="ملاحظات"><textarea value={ef.notes} onChange={e=>setEf({...ef,notes:e.target.value})} rows={2} style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            <div style={{display:"flex",gap:"10px",marginTop:"8px"}}>
+              <Btn variant="outline" full onClick={()=>setEditUser(null)}>إلغاء</Btn>
+              <Btn variant="fill" full disabled={saving} onClick={saveEdit}>{saving?"جارٍ الحفظ...":"حفظ"}</Btn>
+            </div>
+          </div>
+        </div>}
+      </div>
+    );
+  }
+
+  // Desktop layout
   return(
     <div style={{minHeight:"100vh",background:T.bg,display:"flex"}}>
-      {/* Sidebar */}
-      <div className="sidebar" style={{position:"fixed",top:0,right:0,bottom:0,width:"230px",background:T.sur,borderLeft:`1px solid ${T.brd}`,display:"flex",flexDirection:"column",padding:"28px 16px",zIndex:100}}>
-        <div className="sidebar-info" style={{marginBottom:"32px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"16px"}}>
-            <div style={{width:"8px",height:"8px",borderRadius:"50%",background:T.acc,boxShadow:`0 0 8px ${T.acc}`}}/>
-            <span style={{fontSize:"11px",color:T.tx2,letterSpacing:"0.1em"}}>PODCAST STUDIO</span>
+      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"230px",background:T.sur,borderLeft:`1px solid ${T.brd}`,display:"flex",flexDirection:"column",padding:"28px 16px",zIndex:100}}>
+        <div style={{marginBottom:"32px"}}>
+          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"12px"}}>
+            <div style={{width:"7px",height:"7px",borderRadius:"50%",background:T.acc,boxShadow:`0 0 8px ${T.acc}`}}/>
+            <span style={{fontSize:"10px",color:T.tx2,letterSpacing:"0.1em"}}>PODCAST STUDIO</span>
           </div>
-          <div style={{fontSize:"18px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>⚙ لوحة الأدمن</div>
+          <div style={{fontSize:"17px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>⚙ لوحة الأدمن</div>
           <div style={{fontSize:"11px",color:T.tx3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</div>
         </div>
         <nav style={{flex:1,display:"flex",flexDirection:"column",gap:"4px"}}>
           {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?T.accL:"transparent",border:`1px solid ${tab===t.id?T.acc:T.brd}`,borderRadius:"8px",padding:"11px 14px",cursor:"pointer",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"600",fontSize:"13px",textAlign:"right",display:"flex",alignItems:"center",gap:"8px",transition:"all 0.2s"}}><span>{t.ic}</span>{t.l}</button>))}
         </nav>
-        <div className="sidebar-footer" style={{borderTop:`1px solid ${T.brd}`,paddingTop:"16px",display:"flex",flexDirection:"column",gap:"8px"}}>
+        <div style={{borderTop:`1px solid ${T.brd}`,paddingTop:"16px",display:"flex",flexDirection:"column",gap:"8px"}}>
           <a href="/app" style={{display:"block",padding:"10px 14px",borderRadius:"8px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"12px",textAlign:"center",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>← العودة للأداة</a>
           <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"10px 14px",borderRadius:"8px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"12px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>تسجيل الخروج</button>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="main-content" style={{marginRight:"230px",padding:"32px",flex:1,minWidth:0}}>
-        {msg.text&&<Alert text={msg.text} type={msg.type}/>}
+      <div style={{marginRight:"230px",padding:"32px",flex:1,minWidth:0}}>
+        {msg.text&&<Alrt text={msg.text} type={msg.type}/>}
 
-        {/* OVERVIEW */}
         {tab==="overview"&&<div className="fade">
           <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>نظرة عامة</div><div style={{color:T.tx2,fontSize:"13px"}}>إحصاءات استوديو البودكاست</div></div>
-          <div className="stats-grid" style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px",marginBottom:"28px"}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px",marginBottom:"28px"}}>
             <StatCard ic="👥" l="إجمالي المستخدمين" v={stats.total} c={T.acc}/>
             <StatCard ic="🆓" l="باقة مجانية" v={stats.free} c={T.tx2}/>
             <StatCard ic="💎" l="باقة مدفوعة" v={stats.pro} c={T.ok}/>
@@ -182,7 +331,7 @@ const Dashboard=({user,onLogout})=>{
             </div>
             {loading?<Spin/>:(
               <div style={{overflowX:"auto"}}>
-                <table style={{fontSize:"12px"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
                   <thead><tr style={{borderBottom:`1px solid ${T.brd}`}}>{["الاسم","البريد","البودكاست","الباقة","الاستخدام","التسجيل"].map(h=>(<th key={h} style={{padding:"8px 12px",color:T.tx2,textAlign:"right",fontWeight:"600",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
                   <tbody>{users.slice(0,10).map(u=>(<tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`}}>
                     <td style={{padding:"10px 12px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
@@ -198,10 +347,9 @@ const Dashboard=({user,onLogout})=>{
           </Card>
         </div>}
 
-        {/* USERS */}
         {tab==="users"&&<div className="fade">
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"24px"}}>
-            <div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>المشتركون</div><div style={{color:T.tx2,fontSize:"13px"}}>{filtered.length} من {users.length} مستخدم</div></div>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"22px"}}>
+            <div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>المشتركون</div><div style={{color:T.tx2,fontSize:"13px"}}>{filtered.length} من {users.length}</div></div>
             <Btn small variant="outline" onClick={load}>↻ تحديث</Btn>
           </div>
           <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"12px",marginBottom:"18px"}}>
@@ -213,21 +361,18 @@ const Dashboard=({user,onLogout})=>{
           {loading?<Spin/>:(
             <Card style={{padding:"0",overflow:"hidden"}}>
               <div style={{overflowX:"auto"}}>
-                <table style={{fontSize:"12px"}}>
+                <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
                   <thead><tr style={{background:T.sur,borderBottom:`1px solid ${T.brd}`}}>{["الاسم","البريد","البودكاست","الباقة","استخدام","كريديت","beta","ملاحظات","إجراء"].map(h=>(<th key={h} style={{padding:"12px 14px",color:T.tx2,textAlign:"right",fontWeight:"600",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
                   <tbody>{filtered.map(u=>{const d=betaDays(u);return(<tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`,transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=T.sur} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
                     <td style={{padding:"11px 14px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
                     <td style={{padding:"11px 14px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.profile.email||u.user_id.slice(0,12)+"..."}</td>
                     <td style={{padding:"11px 14px",color:T.tx2,maxWidth:"110px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.profile.podcast_name||"—"}</td>
-                    <td style={{padding:"11px 14px",whiteSpace:"nowrap"}}><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></td>
+                    <td style={{padding:"11px 14px"}}><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></td>
                     <td style={{padding:"11px 14px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}</td>
                     <td style={{padding:"11px 14px",color:T.acc,textAlign:"center",fontWeight:"700"}}>{u.credits||0}</td>
                     <td style={{padding:"11px 14px",textAlign:"center"}}>{d!==null?<span style={{color:d<3?T.err:d<7?T.warn:T.ok,fontSize:"11px",fontWeight:"700"}}>{d>0?d+" يوم":"منتهية"}</span>:"—"}</td>
                     <td style={{padding:"11px 14px",color:T.tx2,maxWidth:"100px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.notes||"—"}</td>
-                    <td style={{padding:"11px 14px"}}><div style={{display:"flex",gap:"6px"}}>
-                      <Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn>
-                      <Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn>
-                    </div></td>
+                    <td style={{padding:"11px 14px"}}><div style={{display:"flex",gap:"6px"}}><Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn><Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn></div></td>
                   </tr>);})}</tbody>
                 </table>
               </div>
@@ -235,86 +380,52 @@ const Dashboard=({user,onLogout})=>{
           )}
         </div>}
 
-        {/* EXPORT */}
         {tab==="export"&&<div className="fade">
           <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>تصدير البيانات</div><div style={{color:T.tx2,fontSize:"13px"}}>تصدير وإحصاءات المشتركين</div></div>
-          <div className="export-grid" style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"20px"}}>
-            <Card>
-              <div style={{fontSize:"28px",marginBottom:"10px"}}>📊</div>
-              <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>تصدير كل المشتركين</div>
-              <div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>ملف CSV يشمل الاسم والبريد والبودكاست والباقة والاستخدام والملاحظات.</div>
-              <Btn variant="fill" onClick={exportCSV}>⬇ تصدير CSV</Btn>
-            </Card>
-            <Card>
-              <div style={{fontSize:"28px",marginBottom:"10px"}}>📧</div>
-              <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>قائمة العروض</div>
-              <div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>المشتركون الذين وافقوا على استقبال العروض والهدايا فقط.</div>
-              <Btn variant="fill" onClick={()=>{
-                const list=users.filter(u=>u.profile.accept_offers);
-                const rows=[["الاسم","البريد","البودكاست"]];
-                list.forEach(u=>rows.push([`${u.profile.first_name||""} ${u.profile.last_name||""}`.trim(),u.profile.email||"",u.profile.podcast_name||""]));
-                const csv=rows.map(r=>r.join(",")).join("\n");
-                const blob=new Blob(["\ufeff"+csv],{type:"text/csv;charset=utf-8"});
-                const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="offers.csv";a.click();URL.revokeObjectURL(url);
-                flash(`✓ تم تصدير ${list.length} مشترك`,"ok");
-              }}>⬇ تصدير قائمة العروض</Btn>
-            </Card>
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"20px"}}>
+            <Card><div style={{fontSize:"28px",marginBottom:"10px"}}>📊</div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>تصدير كل المشتركين</div><div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>ملف CSV يشمل كل البيانات.</div><Btn variant="fill" onClick={()=>exportCSV("all")}>⬇ تصدير CSV</Btn></Card>
+            <Card><div style={{fontSize:"28px",marginBottom:"10px"}}>📧</div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>قائمة العروض</div><div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>من وافقوا على استقبال العروض فقط.</div><Btn variant="fill" onClick={()=>exportCSV("offers")}>⬇ تصدير قائمة العروض</Btn></Card>
           </div>
-          <Card>
-            <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>📋 ملخص إحصائي</div>
+          <Card><div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>📋 ملخص إحصائي</div>
             <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"14px"}}>
-              {[
-                {l:"إجمالي المستخدمين",v:stats.total},
-                {l:"باقة مجانية",v:stats.free},
-                {l:"باقة مدفوعة",v:stats.pro},
-                {l:"تجربة مبكرة",v:stats.beta},
-                {l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},
-                {l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},
-                {l:"حلقات مولّدة",v:stats.episodes},
-                {l:"كريديت متبقٍ",v:stats.credits},
-              ].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"14px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"24px",fontWeight:"800",color:T.acc,marginBottom:"4px"}}>{s.v}</div><div style={{fontSize:"11px",color:T.tx2}}>{s.l}</div></div>))}
+              {[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"14px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"24px",fontWeight:"800",color:T.acc,marginBottom:"4px"}}>{s.v}</div><div style={{fontSize:"11px",color:T.tx2}}>{s.l}</div></div>))}
+            </div>
+          </Card>
+        </div>}
+
+        {editUser&&<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px"}}>
+          <Card style={{width:"100%",maxWidth:"480px",maxHeight:"90vh",overflowY:"auto",padding:"28px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
+              <div><div style={{fontSize:"16px",fontWeight:"700",color:T.tx}}>✏️ تعديل المستخدم</div><div style={{color:T.tx2,fontSize:"12px",marginTop:"3px"}}>{editUser.profile.email||""}</div></div>
+              <button onClick={()=>setEditUser(null)} style={{background:"none",border:"none",color:T.tx2,fontSize:"20px",cursor:"pointer"}}>✕</button>
+            </div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
+              <Field label="الاسم الأول"><input value={ef.fn} onChange={e=>setEf({...ef,fn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+              <Field label="الاسم الأخير"><input value={ef.ln} onChange={e=>setEf({...ef,ln:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            </div>
+            <Field label="اسم البودكاست"><input value={ef.pn} onChange={e=>setEf({...ef,pn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            <div style={{borderTop:`1px solid ${T.brd}`,margin:"14px 0",paddingTop:"14px"}}>
+              <Field label="الباقة"><select value={ef.plan} onChange={e=>setEf({...ef,plan:e.target.value})} style={{...IS,cursor:"pointer",appearance:"none"}}><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option></select></Field>
+              {ef.plan==="beta"&&<Field label="مدة التجربة (أيام)"><input value={ef.betaDays} onChange={e=>setEf({...ef,betaDays:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>}
+              <Field label="الكريديت"><input value={ef.credits} onChange={e=>setEf({...ef,credits:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+              <Field label="ملاحظات"><textarea value={ef.notes} onChange={e=>setEf({...ef,notes:e.target.value})} rows={2} style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+            </div>
+            <div style={{display:"flex",justifyContent:"space-between",gap:"10px"}}>
+              <Btn variant="outline" onClick={()=>setEditUser(null)}>إلغاء</Btn>
+              <Btn variant="fill" disabled={saving} onClick={saveEdit}>{saving?"جارٍ الحفظ...":"حفظ التغييرات"}</Btn>
             </div>
           </Card>
         </div>}
       </div>
-
-      {/* Edit Modal */}
-      {editUser&&(<div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.8)",backdropFilter:"blur(4px)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:9999,padding:"16px"}}>
-        <Card style={{width:"100%",maxWidth:"480px",maxHeight:"90vh",overflowY:"auto",padding:"28px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px"}}>
-            <div><div style={{fontSize:"16px",fontWeight:"700",color:T.tx}}>✏️ تعديل المستخدم</div><div style={{color:T.tx2,fontSize:"12px",marginTop:"3px"}}>{editUser.profile.email||editUser.user_id.slice(0,20)+"..."}</div></div>
-            <button onClick={()=>setEditUser(null)} style={{background:"none",border:"none",color:T.tx2,fontSize:"20px",cursor:"pointer"}}>✕</button>
-          </div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px"}}>
-            <Field label="الاسم الأول"><input value={ef.fn} onChange={e=>setEf({...ef,fn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-            <Field label="الاسم الأخير"><input value={ef.ln} onChange={e=>setEf({...ef,ln:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-          </div>
-          <Field label="اسم البودكاست"><input value={ef.pn} onChange={e=>setEf({...ef,pn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-          <div style={{borderTop:`1px solid ${T.brd}`,margin:"14px 0",paddingTop:"14px"}}>
-            <Field label="الباقة">
-              <select value={ef.plan} onChange={e=>setEf({...ef,plan:e.target.value})} style={{...IS,cursor:"pointer",appearance:"none"}}>
-                <option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option>
-              </select>
-            </Field>
-            {ef.plan==="beta"&&<Field label="مدة التجربة (أيام)"><input value={ef.betaDays} onChange={e=>setEf({...ef,betaDays:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>}
-            <Field label="الكريديت الإضافي"><input value={ef.credits} onChange={e=>setEf({...ef,credits:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-            <Field label="ملاحظات داخلية"><textarea value={ef.notes} onChange={e=>setEf({...ef,notes:e.target.value})} rows={2} style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-          </div>
-          <div style={{display:"flex",justifyContent:"space-between",gap:"10px"}}>
-            <Btn variant="outline" onClick={()=>setEditUser(null)}>إلغاء</Btn>
-            <Btn variant="fill" disabled={saving} onClick={saveEdit}>{saving?"جارٍ الحفظ...":"حفظ التغييرات"}</Btn>
-          </div>
-        </Card>
-      </div>)}
     </div>
   );
 };
 
 const App=()=>{
-  const [user,setUser]=useState(null);const [loading,setLoading]=useState(true);
-  useEffect(()=>{sb.auth.getSession().then(({data})=>{const u=data.session?.user||null;if(u&&u.email===ADMIN)setUser(u);setLoading(false);});  },[]);
+  const[user,setUser]=useState(null);const[loading,setLoading]=useState(true);
+  useEffect(()=>{sb.auth.getSession().then(({data})=>{const u=data.session?.user||null;if(u&&u.email===ADMIN)setUser(u);setLoading(false);});},[]);
   if(loading)return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:T.bg}}><Spin/></div>;
-  if(!user)return <LoginScreen onLogin={setUser}/>;
+  if(!user)return <Login onLogin={setUser}/>;
   return <Dashboard user={user} onLogout={()=>setUser(null)}/>;
 };
 
