@@ -776,7 +776,7 @@ const AdminScreen = ({onBack}) => {
                       <td style={{padding:"12px 14px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}/{getEffectiveLimit(u)===Infinity?"∞":getEffectiveLimit(u)}</td>
                       <td style={{padding:"12px 14px",color:T.acc,textAlign:"center",fontWeight:"700"}}>{u.credits||0}</td>
                       <td style={{padding:"12px 14px",color:T.tx2,maxWidth:"120px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.notes||"—"}</td>
-                      <td style={{padding:"12px 14px"}}><Btn small variant="outline" onClick={()=>openEdit(u)}>تعديل</Btn></td>
+                      <td style={{padding:"12px 14px"}}><div style={{display:"flex",gap:"6px"}}>   <Btn small variant="outline" onClick={()=>openEdit(u)}>تعديل</Btn>   <Btn small variant="outline" color={T.err} onClick={async()=>{     if(!confirm(`حذف ${u.profile.first_name}؟`))return;     await sb.from("usage").delete().eq("user_id",u.user_id);     await sb.from("profiles").delete().eq("id",u.user_id);     await loadData();   }}>حذف</Btn> </div></td>
                     </tr>
                   ))}
                 </tbody>
