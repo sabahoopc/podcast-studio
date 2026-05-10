@@ -917,7 +917,7 @@ const App = () => {
           <Nav active={tab} onChange={setTab}/>
           {tab==="create"&&<CreateScreen onEpReady={setEpisode} onNav={setTab} user={user}/>}
           {tab==="production"&&<ProductionScreen episode={episode} onNav={setTab}/>}
-          {tab==="marketing"&&<MarketingScreen episode={episode} onNav={setTab}/>}
+          {tab==="marketing"&&<MarketingScreen episode={episode} onNav={setTab} usage={usage}/>}
           {tab==="episodes"&&<EpisodesScreen onLoad={ep=>{setEpisode(ep);setTab("create");}}/>}
         </div>
       </div>
