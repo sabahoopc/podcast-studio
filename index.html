@@ -208,7 +208,7 @@ const TABS = [{id:"create",l:"إنشاء"},{id:"production",l:"الإنتاج"},
 const Nav = ({active,onChange}) => (
   <div style={{display:"flex",gap:"3px",background:T.bg,border:`1px solid ${T.brd}`,borderRadius:"10px",padding:"4px",marginBottom:"24px"}}>
     {TABS.map(t=>(
-      <button key={t.id} onClick={()=>onChange(t.id)} style={{flex:1,background:active===t.id?T.acc:"transparent",border:"none",borderRadius:"7px",padding:"9px 4px",color:active===t.id?"#0d0d14":T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"12px",cursor:"pointer",transition:"all 0.2s"}}>{t.l}</button>
+      <button data-tour={t.id} key={t.id} onClick={()=>onChange(t.id)} style={{flex:1,background:active===t.id?T.acc:"transparent",border:"none",borderRadius:"7px",padding:"9px 4px",color:active===t.id?"#0d0d14":T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"12px",cursor:"pointer",transition:"all 0.2s"}}>{t.l}</button>
     ))}
   </div>
 );
@@ -483,7 +483,7 @@ const fullScript = part1.replace("[يتبع...]","").trim()+"\n\n"+part2+(part3.
           </div>
           <Field label="اسم البودكاست"><Input value={name} onChange={setName} placeholder="مثال: بودكاست مدى، صوت العقل..."/></Field>
           <div style={{fontSize:"11px",letterSpacing:"0.12em",color:T.tx2,textTransform:"uppercase",marginBottom:"12px"}}>نوع البودكاست</div>
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px",marginBottom:"28px"}}>
+          <div data-tour="type" style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px",marginBottom:"28px"}}>
             {Object.entries(TYPES).map(([k,t])=>{const sel=type===k;return(
               <div key={k} onClick={()=>setType(k)} style={{border:`2px solid ${sel?t.color:T.brd}`,borderRadius:"10px",padding:"16px 12px",cursor:"pointer",background:sel?t.color+"12":T.bg,transition:"all 0.2s",textAlign:"center"}}>
                 <div style={{fontSize:"20px",marginBottom:"6px"}}>{t.icon}</div>
@@ -518,7 +518,7 @@ const fullScript = part1.replace("[يتبع...]","").trim()+"\n\n"+part2+(part3.
           <div style={{color:T.tx2,fontSize:"12px",marginBottom:"16px"}}>{duration} · {frequency}</div>
           {usageBar}
           {!script&&!busy&&(
-            <Card style={{textAlign:"center",padding:"44px 24px"}}>
+            <Card data-tour="generate" style={{textAlign:"center",padding:"44px 24px"}}>
               <div style={{fontSize:"36px",marginBottom:"12px"}}>{type==="solo"?"✦":type==="group"?"⬡":"◈"}</div>
               <div style={{fontWeight:"700",fontSize:"15px",color:T.tx,marginBottom:"6px"}}>جاهز لتوليد {type==="solo"?"السكريبت":type==="group"?"سكريبت الحوار":"أسئلة الحلقة"}</div>
               <div style={{color:T.tx2,fontSize:"12px",marginBottom:"24px"}}>{Object.keys(gStyle()).length?"سيتم الكتابة بأسلوبك الشخصي":"سيتم التوليد بناءً على معلوماتك"}</div>
@@ -1064,13 +1064,21 @@ const OnboardingTour = ({onDone}) => {
  const App = () => {
   const [tab,setTab]=useState("create");
   const [showStyle,setShowStyle]=useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [hasStyle,setHasStyle]=useState(()=>{const s=gStyle();return!!(s.tone||s.opening);});
+  const [showTour, setShowTour] = useState(false);
   const [episode,setEpisode]=useState(null);
+  const [showTour, setShowTour] = useState(false);
  const [usage,setUsage]=useState(null);
+  const [showTour, setShowTour] = useState(false);
   const [user,setUser]=useState(null);
+  const [showTour, setShowTour] = useState(false);
   const [profile,setProfile]=useState(null);
+  const [showTour, setShowTour] = useState(false);
   const [authLoading,setAuthLoading]=useState(true);
+  const [showTour, setShowTour] = useState(false);
   const [showAdmin,setShowAdmin]=useState(false);
+  const [showTour, setShowTour] = useState(false);
 
  useEffect(()=>{
   sb.from("settings").select("value").eq("key","maintenance").single().then(({data})=>{
@@ -1099,6 +1107,10 @@ const OnboardingTour = ({onDone}) => {
   const loadProfile = async (userId) => {
     const{data}=await sb.from("profiles").select("*").eq("id",userId).single();
     setProfile(data||null);
+   if (!localStorage.getItem(ONBOARDING_KEY)) { setTimeout(() => setShowTour(true), 1000); }
+   if (!localStorage.getItem(ONBOARDING_KEY)) {
+  setTimeout(() => setShowTour(true), 1000);
+}
    const{data:u}=await sb.from("usage").select("*").eq("user_id",userId).single();
 setUsage(u||null);
     setAuthLoading(false);
@@ -1130,7 +1142,7 @@ setUsage(u||null);
           </div>
           <div style={{display:"flex",gap:"8px",alignItems:"flex-start"}}>
             {isAdmin&&<button onClick={()=>setShowAdmin(true)} style={{background:T.sur,border:`1px solid ${T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}><div style={{fontSize:"16px",marginBottom:"2px"}}>⚙</div><div>أدمن</div></button>}
-            <button onClick={()=>setShowStyle(true)} style={{background:hasStyle?T.accL:T.sur,border:`1px solid ${hasStyle?T.acc:T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:hasStyle?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}>
+            <button data-tour="style" onClick={()=>setShowStyle(true)} style={{background:hasStyle?T.accL:T.sur,border:`1px solid ${hasStyle?T.acc:T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:hasStyle?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}>
               <div style={{fontSize:"17px",marginBottom:"2px"}}>✦</div><div>أسلوبي</div>
               <div style={{fontSize:"9px",marginTop:"2px",opacity:0.7}}>{hasStyle?"مفعّل":"غير مُعدّ"}</div>
             </button>
@@ -1151,7 +1163,7 @@ setUsage(u||null);
           {tab==="episodes"&&<EpisodesScreen onLoad={ep=>{setEpisode(ep);setTab("create");}}/>}
         </div>
       </div>
-
+{showTour && <OnboardingTour onDone={() => setShowTour(false)} />}
       <div style={{color:T.tx3,fontSize:"10px",marginTop:"20px",textAlign:"center"}}>
   المحتوى المولد للاسترشاد والتعديل قبل النشر
   <span style={{margin:"0 8px"}}>·</span>
