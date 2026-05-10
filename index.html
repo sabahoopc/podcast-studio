@@ -89,6 +89,7 @@ const getEffectiveLimit = (usage) => {
   }
   return PLANS[plan] || PLANS.free;
 };
+const isPro2 = (usage) => usage?.plan === "pro2";
 
 const canGenerate = (usage) => {
   if(!usage) return false;
