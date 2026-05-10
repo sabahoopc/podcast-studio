@@ -601,7 +601,7 @@ setBusy(false);
 // ── Marketing Screen ───────────────────────────────────────────────────────
 const MarketingScreen = ({episode,onNav}) => {
   const [link,setLink]=useState("");const [tab,setTab]=useState("description");const [outs,setOuts]=useState({});const [busy,setBusy]=useState("");const [dlDone,setDlDone]=useState(false);
-  const MTABS=[{id:"description",l:"وصف الحلقة"},{id:"social",l:"السوشيال"},{id:"email",l:"نشرة بريدية"},{id:"titles",l:"عناوين بديلة"}];
+  const MTABS = [{ id:"description",l:"وصف الحلقة" },{ id:"social",l:"السوشيال" },{ id:"email",l:"نشرة بريدية" },{ id:"titles",l:"عناوين بديلة" },{ id:"reels",l:"Reels & TikTok ⭐" }];
   const gen=async t=>{
     if(!episode)return;setBusy(t);
     const base=`البودكاست: "${episode.name}" | النوع: ${TYPES[episode.type]?.label}\nالموضوع: ${episode.topic}\n${link?"رابط الحلقة: "+link:""}\n\n`;
