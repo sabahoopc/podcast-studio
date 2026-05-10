@@ -976,6 +976,91 @@ const HelpButton = () => {
     </>
   );
 };
+ const ONBOARDING_KEY = "ps_onboarding_done_v1";
+
+const OnboardingTour = ({onDone}) => {
+  const [step, setStep] = useState(0);
+  const [pos, setPos] = useState({top:0,left:0,width:0,height:0});
+
+  const steps = [
+    { selector: "[data-tour='style']", title: "✦ أسلوبك الشخصي", desc: "ابدأ بتعريف الأداة بأسلوبك — الصق مقطعاً من حلقة سابقة وستكتب الأداة بنفس نبرتك تلقائياً في كل سكريبت.", pos: "bottom" },
+    { selector: "[data-tour='type']", title: "نوع البودكاست", desc: "اختر نوع بودكاستك — فردي إذا كنت وحدك، جماعي لأكثر من مذيع، أو حواري لاستضافة ضيف.", pos: "bottom" },
+    { selector: "[data-tour='generate']", title: "توليد السكريبت", desc: "بعد إدخال موضوع الحلقة اضغط هنا — سيولّد الذكاء الاصطناعي سكريبتاً كاملاً جاهزاً للتسجيل في دقيقتين.", pos: "top" },
+    { selector: "[data-tour='production']", title: "◉ نصائح الإنتاج", desc: "اختر نوع استوديوك واحصل على توصيات مخصصة للميكروفون والإضاءة والتحرير الصوتي.", pos: "bottom" },
+    { selector: "[data-tour='marketing']", title: "◐ التسويق", desc: "ولّد وصف الحلقة ومنشورات السوشيال والنشرة البريدية وعناوين بديلة — كلها جاهزة للنسخ.", pos: "bottom" },
+    { selector: "[data-tour='episodes']", title: "▦ حلقاتي", desc: "كل حلقاتك محفوظة هنا — يمكنك تحميلها في أي وقت أو تنزيلها كملف متكامل.", pos: "bottom" },
+  ];
+
+  useEffect(() => {
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    return () => window.removeEventListener("resize", updatePos);
+  }, [step]);
+
+  const updatePos = () => {
+    const el = document.querySelector(steps[step]?.selector);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    setPos({ top: r.top + window.scrollY, left: r.left, width: r.width, height: r.height });
+  };
+
+  const next = () => { if (step < steps.length - 1) setStep(s => s + 1); else done(); };
+  const done = () => { localStorage.setItem(ONBOARDING_KEY, "1"); onDone(); };
+
+  const s = steps[step];
+  const pad = 8;
+  const tooltipWidth = 280;
+
+  const tooltipStyle = () => {
+    const base = { position: "fixed", zIndex: 10001, width: tooltipWidth + "px", background: T.sur, border: `1px solid ${T.acc}`, borderRadius: "12px", padding: "18px 20px", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" };
+    const elLeft = pos.left;
+    const elTop = pos.top - window.scrollY;
+    const elBottom = elTop + pos.height;
+
+    if (s.pos === "bottom") return { ...base, top: elBottom + pad + 12 + "px", left: Math.max(8, Math.min(elLeft, window.innerWidth - tooltipWidth - 8)) + "px" };
+    return { ...base, bottom: window.innerHeight - elTop + pad + 12 + "px", left: Math.max(8, Math.min(elLeft, window.innerWidth - tooltipWidth - 8)) + "px" };
+  };
+
+  return (
+    <>
+      {/* Overlay */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 10000, pointerEvents: "none" }}>
+        <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }}>
+          <defs>
+            <mask id="tour-mask">
+              <rect width="100%" height="100%" fill="white"/>
+              <rect x={pos.left - pad} y={pos.top - window.scrollY - pad} width={pos.width + pad*2} height={pos.height + pad*2} rx="8" fill="black"/>
+            </mask>
+          </defs>
+          <rect width="100%" height="100%" fill="rgba(0,0,0,0.75)" mask="url(#tour-mask)"/>
+          <rect x={pos.left - pad} y={pos.top - window.scrollY - pad} width={pos.width + pad*2} height={pos.height + pad*2} rx="8" fill="none" stroke="#c8a050" strokeWidth="2"/>
+        </svg>
+      </div>
+
+      {/* Tooltip */}
+      <div style={tooltipStyle()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "8px" }}>
+          <div style={{ fontSize: "14px", fontWeight: "700", color: T.acc }}>{s.title}</div>
+          <button onClick={done} style={{ background: "none", border: "none", color: T.tx3, cursor: "pointer", fontSize: "16px", lineHeight: 1 }}>✕</button>
+        </div>
+        <div style={{ fontSize: "13px", color: T.tx2, lineHeight: "1.7", marginBottom: "16px" }}>{s.desc}</div>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div style={{ fontSize: "11px", color: T.tx3 }}>{step + 1} / {steps.length}</div>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={done} style={{ background: "none", border: "none", color: T.tx3, cursor: "pointer", fontSize: "12px", fontFamily: "'Noto Kufi Arabic',sans-serif" }}>تخطي</button>
+            <button onClick={next} style={{ background: T.acc, border: "none", color: "#0d0d14", borderRadius: "7px", padding: "7px 16px", cursor: "pointer", fontFamily: "'Noto Kufi Arabic',sans-serif", fontWeight: "700", fontSize: "13px" }}>
+              {step < steps.length - 1 ? "التالي ←" : "ابدأ الآن! 🎙️"}
+            </button>
+          </div>
+        </div>
+        {/* Dots */}
+        <div style={{ display: "flex", gap: "4px", justifyContent: "center", marginTop: "12px" }}>
+          {steps.map((_, i) => <div key={i} style={{ width: i === step ? "18px" : "6px", height: "6px", borderRadius: "3px", background: i === step ? T.acc : T.brd2, transition: "all 0.3s" }}/>)}
+        </div>
+      </div>
+    </>
+  );
+};
  const App = () => {
   const [tab,setTab]=useState("create");
   const [showStyle,setShowStyle]=useState(false);
