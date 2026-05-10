@@ -82,8 +82,24 @@ const Dashboard=({user,onLogout})=>{
   const[editUser,setEditUser]=useState(null);
   const[ef,setEf]=useState({});
   const[saving,setSaving]=useState(false);
+  const[maintenance,setMaintenance]=useState(false);
+const[maintenanceBusy,setMaintenanceBusy]=useState(false);
 
-  useEffect(()=>{load();},[]);
+  useEffect(()=>{load();loadSettings();},[]);
+
+const loadSettings=async()=>{
+  const{data}=await sb.from("settings").select("*").eq("key","maintenance").single();
+  if(data)setMaintenance(data.value==="true");
+};
+
+const toggleMaintenance=async()=>{
+  setMaintenanceBusy(true);
+  const newVal=!maintenance;
+  await sb.from("settings").update({value:newVal?"true":"false",updated_at:new Date().toISOString()}).eq("key","maintenance");
+  setMaintenance(newVal);
+  flash(newVal?"✓ وضع الصيانة مفعّل":"✓ الموقع يعمل بشكل طبيعي","ok");
+  setMaintenanceBusy(false);
+};
 
   const load=async()=>{
     setLoading(true);
@@ -142,7 +158,7 @@ const Dashboard=({user,onLogout})=>{
 
   const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
 
-  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"export",l:"تصدير",ic:"📤"}];
+  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
 
   const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
 
@@ -254,6 +270,22 @@ const Dashboard=({user,onLogout})=>{
             </Card>
           </div>}
         </div>
+
+        {tab==="settings"&&<div className="fade">
+  <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>إعدادات الموقع</div><div style={{color:T.tx2,fontSize:"13px"}}>التحكم في حالة الموقع</div></div>
+  <Card>
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div>
+        <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>وضع الصيانة</div>
+        <div style={{fontSize:"13px",color:T.tx2,lineHeight:"1.7"}}>عند التفعيل يرى الزوار صفحة "الموقع تحت الصيانة" بدل الأداة.</div>
+        <div style={{marginTop:"8px"}}><span style={{fontSize:"12px",fontWeight:"700",padding:"3px 10px",borderRadius:"5px",background:maintenance?"rgba(192,80,64,0.15)":"rgba(61,158,111,0.15)",color:maintenance?T.err:T.ok}}>{maintenance?"🔴 الصيانة مفعّلة":"🟢 الموقع يعمل"}</span></div>
+      </div>
+      <Btn variant={maintenance?"fill":"outline"} color={maintenance?T.ok:T.err} disabled={maintenanceBusy} onClick={toggleMaintenance}>
+        {maintenanceBusy?"جارٍ...":maintenance?"تشغيل الموقع ✓":"تفعيل الصيانة 🔧"}
+      </Btn>
+    </div>
+  </Card>
+</div>}
 
         {/* Bottom Nav */}
         <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.sur,borderTop:`1px solid ${T.brd}`,display:"flex",padding:"8px 0",zIndex:50}}>
