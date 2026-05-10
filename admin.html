@@ -197,7 +197,7 @@ const Dashboard=({user,onLogout})=>{
         <Field label="اسم البودكاست"><input value={ef.pn} onChange={e=>setEf({...ef,pn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
         <Field label="الباقة">
           <select value={ef.plan} onChange={e=>setEf({...ef,plan:e.target.value})} style={{...IS,cursor:"pointer",appearance:"none"}}>
-            <option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option>
+            <option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
           </select>
         </Field>
         {ef.plan==="beta"&&<Field label="مدة التجربة (أيام)"><input value={ef.betaDays} onChange={e=>setEf({...ef,betaDays:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>}
@@ -262,7 +262,7 @@ const Dashboard=({user,onLogout})=>{
               </div>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث..." style={{...IS,marginBottom:"10px"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
               <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{...IS,cursor:"pointer",appearance:"none",marginBottom:"14px"}}>
-                <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option>
+                <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
               </select>
               {loading?<Spin/>:(
                 <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
@@ -370,7 +370,7 @@ const Dashboard=({user,onLogout})=>{
             <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"12px",marginBottom:"18px"}}>
               <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث..." style={{...IS,padding:"10px 14px"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
               <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{...IS,width:"auto",minWidth:"150px",cursor:"pointer",appearance:"none"}}>
-                <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="beta">تجربة مبكرة</option>
+                <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
               </select>
             </div>
             {loading?<Spin/>:(
