@@ -78,10 +78,13 @@ const Dashboard=({user,onLogout})=>{
   const[editUser,setEditUser]=useState(null);
   const[ef,setEf]=useState({});
   const[saving,setSaving]=useState(false);
+  const[messages,setMessages]=useState([]);
+const[msgsLoading,setMsgsLoading]=useState(false);
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEdqm_emzyI4SZIRvwROdq8etCfNBLXwRCrrT4nEFgArlTGwiQ/exec";
   const[maintenance,setMaintenance]=useState(false);
   const[maintenanceBusy,setMaintenanceBusy]=useState(false);
 
-  useEffect(()=>{load();loadSettings();},[]);
+  useEffect(()=>{load();loadSettings();loadMessages();},[]);
 
   const load=async()=>{
     setLoading(true);
@@ -98,6 +101,15 @@ const Dashboard=({user,onLogout})=>{
     setLoading(false);
   };
 
+  const loadMessages=async()=>{
+  setMsgsLoading(true);
+  try{
+    const r=await fetch(SHEETS_URL);
+    const data=await r.json();
+    setMessages(data||[]);
+  }catch(e){flash("خطأ في تحميل الرسائل","error");}
+  setMsgsLoading(false);
+};
   const loadSettings=async()=>{
     const{data}=await sb.from("settings").select("*").eq("key","maintenance").single();
     if(data)setMaintenance(data.value==="true");
@@ -155,8 +167,40 @@ const Dashboard=({user,onLogout})=>{
   const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
   const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
 
-  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
+  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
 
+  const MessagesTab=()=>(
+  <div className="fade">
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"24px"}}>
+      <div>
+        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>💬 رسائل التواصل</div>
+        <div style={{color:T.tx2,fontSize:"13px"}}>{messages.length} رسالة</div>
+      </div>
+      <Btn small variant="outline" onClick={loadMessages}>↻ تحديث</Btn>
+    </div>
+    {msgsLoading?<Spin/>:messages.length===0?(
+      <Card style={{textAlign:"center",padding:"40px"}}>
+        <div style={{fontSize:"28px",marginBottom:"10px"}}>💬</div>
+        <div style={{color:T.tx2,fontSize:"14px"}}>لا توجد رسائل بعد</div>
+      </Card>
+    ):(
+      <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+        {messages.map((m,i)=>(
+          <Card key={i} style={{padding:"18px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
+              <div>
+                <div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{m["الاسم"]||"—"}</div>
+                <div style={{color:T.tx2,fontSize:"11px",direction:"ltr",textAlign:"right"}}>{m["البريد"]||"—"}</div>
+              </div>
+              <div style={{fontSize:"11px",color:T.tx3,whiteSpace:"nowrap"}}>{m["التاريخ"]||""}</div>
+            </div>
+            <div style={{background:T.bg,borderRadius:"8px",padding:"12px",fontSize:"13px",color:T.tx,lineHeight:"1.7",border:`1px solid ${T.brd}`}}>{m["الرسالة"]||"—"}</div>
+          </Card>
+        ))}
+      </div>
+    )}
+  </div>
+);
   const SettingsTab=()=>(
     <div className="fade">
       <div style={{marginBottom:"28px"}}>
@@ -293,6 +337,7 @@ const Dashboard=({user,onLogout})=>{
               <Card><div style={{fontSize:"13px",fontWeight:"700",color:T.tx,marginBottom:"14px"}}>📋 ملخص</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>{[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"12px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"20px",fontWeight:"800",color:T.acc,marginBottom:"3px"}}>{s.v}</div><div style={{fontSize:"10px",color:T.tx2}}>{s.l}</div></div>))}</div></Card>
             </div>
           )}
+          {tab==="messages"&&<MessagesTab/>}
           {tab==="settings"&&<SettingsTab/>}
         </div>
         <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.sur,borderTop:`1px solid ${T.brd}`,display:"flex",padding:"8px 0",zIndex:50}}>
@@ -410,6 +455,7 @@ const Dashboard=({user,onLogout})=>{
             </Card>
           </div>
         )}
+        {tab==="messages"&&<MessagesTab/>}
         {tab==="settings"&&<SettingsTab/>}
         <EditModal/>
       </div>
