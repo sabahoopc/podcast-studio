@@ -168,7 +168,7 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
   const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
   const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
 
-  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
+  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"email",l:"إرسال إيميل",ic:"📧"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
 
   const MessagesTab=()=>(
   <div className="fade">
@@ -202,6 +202,135 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
     )}
   </div>
 );
+  const EmailTab=()=>{
+  const[subject,setSubject]=useState("");
+  const[body,setBody]=useState("");
+  const[audience,setAudience]=useState("all");
+  const[preview,setPreview]=useState(false);
+  const[sending,setSending]=useState(false);
+  const[result,setResult]=useState({text:"",type:"ok"});
+
+  const getRecipients=()=>{
+    switch(audience){
+      case "free": return users.filter(u=>u.plan==="free"&&u.profile.email);
+      case "pro": return users.filter(u=>u.plan==="pro"&&u.profile.email);
+      case "pro2": return users.filter(u=>u.plan==="pro2"&&u.profile.email);
+      case "beta": return users.filter(u=>u.plan==="beta"&&u.profile.email);
+      case "offers": return users.filter(u=>u.profile.accept_offers&&u.profile.email);
+      default: return users.filter(u=>u.profile.email);
+    }
+  };
+
+  const buildHTML=(name,bodyText)=>`
+    <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0d0d14;color:#e2ddd4;padding:40px 24px;border-radius:12px;">
+      <div style="text-align:center;margin-bottom:32px;">
+        <div style="font-size:28px;margin-bottom:8px;">🎙️</div>
+        <div style="font-size:20px;font-weight:700;color:#c8a050;">استوديو البودكاست</div>
+      </div>
+      <p style="font-size:16px;margin-bottom:20px;">مرحباً ${name}،</p>
+      <div style="font-size:14px;color:#8a8599;line-height:2;white-space:pre-wrap;">${bodyText}</div>
+      <div style="margin-top:32px;text-align:center;">
+        <a href="https://www.mypcstudio.com" style="display:inline-block;background:#c8a050;color:#0d0d14;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">افتح الأداة ←</a>
+      </div>
+      <p style="font-size:11px;color:#4a4860;text-align:center;margin-top:24px;">استوديو البودكاست · mypcstudio.com</p>
+    </div>
+  `;
+
+  const send=async()=>{
+    if(!subject.trim()||!body.trim())return;
+    const recipients=getRecipients();
+    if(!recipients.length){setResult({text:"لا يوجد مستخدمون في هذه الفئة",type:"error"});return;}
+    if(!window.confirm(`إرسال لـ ${recipients.length} مستخدم؟`))return;
+    setSending(true);setResult({text:"",type:"ok"});
+    let sent=0;
+    for(const u of recipients){
+      const name=u.profile.first_name||"عزيزي المستخدم";
+      try{
+        await fetch("https://api.resend.com/emails",{
+          method:"POST",
+          headers:{"Authorization":`Bearer ${RESEND_KEY}`,"Content-Type":"application/json"},
+          body:JSON.stringify({
+            from:"استوديو البودكاست <hello@mypcstudio.com>",
+            to:u.profile.email,
+            subject,
+            html:buildHTML(name,body),
+          }),
+        });
+        sent++;
+      }catch{}
+    }
+    setResult({text:`✓ تم الإرسال لـ ${sent} مستخدم`,type:"ok"});
+    setSending(false);
+  };
+
+  const recipients=getRecipients();
+
+  return(
+    <div className="fade">
+      <div style={{marginBottom:"28px"}}>
+        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>📧 إرسال إيميل</div>
+        <div style={{color:T.tx2,fontSize:"13px"}}>أرسل إيميلاً منسقاً لمجموعة من المشتركين</div>
+      </div>
+      {result.text&&<Alrt text={result.text} type={result.type}/>}
+      <div style={{display:"grid",gridTemplateColumns:preview?"1fr 1fr":"1fr",gap:"20px"}}>
+        <div>
+          <Card style={{marginBottom:"16px"}}>
+            <Field label="الجمهور المستهدف">
+              <select value={audience} onChange={e=>setAudience(e.target.value)} style={{...IS,cursor:"pointer",appearance:"none"}}>
+                <option value="all">كل المشتركين ({users.filter(u=>u.profile.email).length})</option>
+                <option value="free">الباقة المجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
+                <option value="pro">الباقة المدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
+                <option value="pro2">الباقة الاحترافية ({users.filter(u=>u.plan==="pro2"&&u.profile.email).length})</option>
+                <option value="beta">التجربة المبكرة ({users.filter(u=>u.plan==="beta"&&u.profile.email).length})</option>
+                <option value="offers">وافقوا على العروض ({users.filter(u=>u.profile.accept_offers&&u.profile.email).length})</option>
+              </select>
+            </Field>
+            <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
+              سيُرسَل لـ <strong style={{color:T.acc}}>{recipients.length} مستخدم</strong>
+            </div>
+            <Field label="عنوان الإيميل">
+              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="مثال: تحديث جديد في الأداة 🎙️" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+            </Field>
+            <Field label="نص الرسالة">
+              <textarea value={body} onChange={e=>setBody(e.target.value)} rows={10} placeholder="اكتب رسالتك هنا...&#10;&#10;يمكنك استخدام أسطر متعددة للتنسيق." style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+            </Field>
+            <div style={{display:"flex",gap:"10px"}}>
+              <Btn variant="outline" onClick={()=>setPreview(!preview)}>{preview?"إخفاء المعاينة":"معاينة الإيميل"}</Btn>
+              <Btn variant="fill" disabled={!subject.trim()||!body.trim()||sending||!recipients.length} onClick={send} full>
+                {sending?`جارٍ الإرسال...`:`إرسال لـ ${recipients.length} مستخدم ←`}
+              </Btn>
+            </div>
+          </Card>
+        </div>
+        {preview&&(
+          <div>
+            <div style={{fontSize:"12px",color:T.tx2,marginBottom:"10px",fontWeight:"700"}}>معاينة الإيميل:</div>
+            <div style={{background:"#fff",borderRadius:"12px",overflow:"hidden",border:`1px solid ${T.brd}`}}>
+              <div style={{background:"#f5f5f5",padding:"10px 16px",fontSize:"12px",color:"#666",borderBottom:"1px solid #ddd"}}>
+                <strong>من:</strong> استوديو البودكاست &lt;hello@mypcstudio.com&gt;<br/>
+                <strong>الموضوع:</strong> {subject||"(بدون عنوان)"}
+              </div>
+              <div dangerouslySetInnerHTML={{__html:body?`
+                <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0d0d14;color:#e2ddd4;padding:40px 24px;">
+                  <div style="text-align:center;margin-bottom:32px;">
+                    <div style="font-size:28px;margin-bottom:8px;">🎙️</div>
+                    <div style="font-size:20px;font-weight:700;color:#c8a050;">استوديو البودكاست</div>
+                  </div>
+                  <p style="font-size:16px;margin-bottom:20px;">مرحباً [الاسم]،</p>
+                  <div style="font-size:14px;color:#8a8599;line-height:2;white-space:pre-wrap;">${body}</div>
+                  <div style="margin-top:32px;text-align:center;">
+                    <a href="#" style="display:inline-block;background:#c8a050;color:#0d0d14;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">افتح الأداة ←</a>
+                  </div>
+                  <p style="font-size:11px;color:#4a4860;text-align:center;margin-top:24px;">استوديو البودكاست · mypcstudio.com</p>
+                </div>
+              `:"<p style='padding:20px;color:#999;text-align:center'>اكتب نص الرسالة لترى المعاينة</p>"}}/>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
   const SettingsTab=()=>(
     <div className="fade">
       <div style={{marginBottom:"28px"}}>
@@ -339,6 +468,7 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
             </div>
           )}
           {tab==="messages"&&<MessagesTab/>}
+          {tab==="email"&&<EmailTab/>}
           {tab==="settings"&&<SettingsTab/>}
         </div>
         <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.sur,borderTop:`1px solid ${T.brd}`,display:"flex",padding:"8px 0",zIndex:50}}>
@@ -457,6 +587,7 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
           </div>
         )}
         {tab==="messages"&&<MessagesTab/>}
+        {tab==="email"&&<EmailTab/>}
         {tab==="settings"&&<SettingsTab/>}
         <EditModal/>
       </div>
