@@ -277,13 +277,13 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
           <Card style={{marginBottom:"16px"}}>
             <Field label="الجمهور المستهدف">
               <select value={audience} onChange={e=>setAudience(e.target.value)} style={{...IS,cursor:"pointer",appearance:"auto",height:"auto",minHeight:"44px"}}>
-                <option value="all">كل المشتركين ({users.filter(u=>u.profile.email).length})</option>
-                <option value="free">الباقة المجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
-                <option value="pro">الباقة المدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
-                <option value="pro2">الباقة الاحترافية ({users.filter(u=>u.plan==="pro2"&&u.profile.email).length})</option>
-                <option value="beta">التجربة المبكرة ({users.filter(u=>u.plan==="beta"&&u.profile.email).length})</option>
-                <option value="offers">وافقوا على العروض ({users.filter(u=>u.profile.accept_offers&&u.profile.email).length})</option>
-              </select>
+                <option value="all">الكل ({users.filter(u=>u.profile.email).length})</option>
+<option value="free">مجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
+<option value="pro">مدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
+<option value="pro2">احترافية ({users.filter(u=>u.plan==="pro2"&&u.profile.email).length})</option>
+<option value="beta">تجربة مبكرة ({users.filter(u=>u.plan==="beta"&&u.profile.email).length})</option>
+<option value="offers">وافقوا ({users.filter(u=>u.profile.accept_offers&&u.profile.email).length})</option>
+</select>
             </Field>
             <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
               سيُرسَل لـ <strong style={{color:T.acc}}>{recipients.length} مستخدم</strong>
