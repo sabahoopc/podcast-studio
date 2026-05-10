@@ -834,6 +834,14 @@ const App = () => {
   const [authLoading,setAuthLoading]=useState(true);
   const [showAdmin,setShowAdmin]=useState(false);
 
+ useEffect(()=>{
+  sb.from("settings").select("value").eq("key","maintenance").single().then(({data})=>{
+    if(data?.value==="true"){
+      document.body.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0d0d14;font-family:'Noto Kufi Arabic',sans-serif;direction:rtl;text-align:center;padding:24px"><div><div style="font-size:48px;margin-bottom:20px">🔧</div><div style="font-size:24px;font-weight:700;color:#e2ddd4;margin-bottom:12px">الموقع تحت الصيانة</div><div style="font-size:15px;color:#8a8599;max-width:400px;line-height:1.8">نعمل على تحسين الأداة. سنعود قريباً إن شاء الله.</div><div style="margin-top:24px;font-size:12px;color:#4a4860">mypcstudio.com</div></div></div>`;
+    }
+  });
+},[]);
+ 
   useEffect(()=>{
     sb.auth.getSession().then(({data})=>{
       const u=data.session?.user||null;
