@@ -367,7 +367,38 @@ const Dashboard=({user,onLogout})=>{
     </div>
   );
 
-  const tabContent={overview:<OverviewTab/>,users:<UsersTab/>,messages:<MessagesTab/>,email:<EmailTab/>,export:<ExportTab/>,settings:<SettingsTab/>};
+  const tabContent={
+  overview:<OverviewTab/>,
+  users:<UsersTab/>,
+  messages:<MessagesTab/>,
+  email:(
+    <div className="fade">
+      <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>📧 إرسال إيميل</div><div style={{color:T.tx2,fontSize:"13px"}}>أرسل إيميلاً منسقاً لمجموعة من المشتركين</div></div>
+      {emailResult.text&&<Alrt text={emailResult.text} type={emailResult.type}/>}
+      <Card>
+        <Field label="الجمهور المستهدف">
+          <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
+            {audienceOptions.map(o=>(<button key={o.v} onClick={()=>setEmailAudience(o.v)} style={{padding:"8px 14px",borderRadius:"8px",cursor:"pointer",fontSize:"12px",fontWeight:"600",fontFamily:"'Noto Kufi Arabic',sans-serif",background:emailAudience===o.v?T.accL:"transparent",border:`1px solid ${emailAudience===o.v?T.acc:T.brd2}`,color:emailAudience===o.v?T.acc:T.tx2}}>{o.l}</button>))}
+          </div>
+        </Field>
+        <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
+          سيُرسَل لـ <strong style={{color:T.acc}}>{emailRecipients.length} مستخدم</strong>
+        </div>
+        <Field label="عنوان الإيميل">
+          <input value={emailSubject} onChange={e=>setEmailSubject(e.target.value)} placeholder="مثال: تحديث جديد في الأداة 🎙️" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+        </Field>
+        <Field label="نص الرسالة">
+          <textarea value={emailBody} onChange={e=>setEmailBody(e.target.value)} rows={8} placeholder="اكتب رسالتك هنا..." style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+        </Field>
+        <Btn variant="fill" disabled={!emailSubject.trim()||!emailBody.trim()||emailSending||!emailRecipients.length} onClick={sendEmail} full={isMobile}>
+          {emailSending?`جارٍ الإرسال...`:`إرسال لـ ${emailRecipients.length} مستخدم ←`}
+        </Btn>
+      </Card>
+    </div>
+  ),
+  export:<ExportTab/>,
+  settings:<SettingsTab/>
+};
 
   if(isMobile){
     return(<div style={{minHeight:"100vh",background:T.bg,paddingBottom:"70px"}}>
