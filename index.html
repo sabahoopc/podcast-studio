@@ -1011,15 +1011,19 @@ const OnboardingTour = ({onDone}) => {
   const pad = 8;
   const tooltipWidth = 280;
 
-  const tooltipStyle = () => {
-    const base = { position: "fixed", zIndex: 10001, width: tooltipWidth + "px", background: T.sur, border: `1px solid ${T.acc}`, borderRadius: "12px", padding: "18px 20px", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" };
-    const elLeft = pos.left;
-    const elTop = pos.top - window.scrollY;
-    const elBottom = elTop + pos.height;
-
-    if (s.pos === "bottom") return { ...base, top: elBottom + pad + 12 + "px", left: Math.max(8, Math.min(elLeft, window.innerWidth - tooltipWidth - 8)) + "px" };
-    return { ...base, bottom: window.innerHeight - elTop + pad + 12 + "px", left: Math.max(8, Math.min(elLeft, window.innerWidth - tooltipWidth - 8)) + "px" };
-  };
+  const tooltipStyle = () => ({
+    position: "fixed",
+    zIndex: 10001,
+    width: Math.min(tooltipWidth, window.innerWidth - 32) + "px",
+    background: T.sur,
+    border: `1px solid ${T.acc}`,
+    borderRadius: "12px",
+    padding: "18px 20px",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+    bottom: "24px",
+    left: "50%",
+    transform: "translateX(-50%)",
+  });
 
   return (
     <>
