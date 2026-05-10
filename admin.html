@@ -275,16 +275,16 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
       <div style={{display:"grid",gridTemplateColumns:preview?"1fr 1fr":"1fr",gap:"20px"}}>
         <div>
           <Card style={{marginBottom:"16px"}}>
-            <Field label="الجمهور المستهدف">
-              style={{...IS,cursor:"pointer",appearance:"auto",color:"#000000",background:"#ffffff",colorScheme:"light"}}
-                <option value="all">الكل ({users.filter(u=>u.profile.email).length})</option>
-<option value="free">مجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
-<option value="pro">مدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
-<option value="pro2">احترافية ({users.filter(u=>u.plan==="pro2"&&u.profile.email).length})</option>
-<option value="beta">تجربة مبكرة ({users.filter(u=>u.plan==="beta"&&u.profile.email).length})</option>
-<option value="offers">وافقوا ({users.filter(u=>u.profile.accept_offers&&u.profile.email).length})</option>
-</select>
-            </Field>
+           <Field label="الجمهور المستهدف">
+  <select value={audience} onChange={e=>setAudience(e.target.value)} style={{...IS,cursor:"pointer",appearance:"auto",color:"#000000",background:"#ffffff",colorScheme:"light"}}>
+    <option value="all">الكل ({users.filter(u=>u.profile.email).length})</option>
+    <option value="free">مجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
+    <option value="pro">مدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
+    <option value="pro2">احترافية ({users.filter(u=>u.plan==="pro2"&&u.profile.email).length})</option>
+    <option value="beta">تجربة مبكرة ({users.filter(u=>u.plan==="beta"&&u.profile.email).length})</option>
+    <option value="offers">وافقوا ({users.filter(u=>u.profile.accept_offers&&u.profile.email).length})</option>
+  </select>
+</Field>
             <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
               سيُرسَل لـ <strong style={{color:T.acc}}>{recipients.length} مستخدم</strong>
             </div>
