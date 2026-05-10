@@ -599,7 +599,7 @@ setBusy(false);
 };
 
 // ── Marketing Screen ───────────────────────────────────────────────────────
-const MarketingScreen = ({episode,onNav}) => {
+const MarketingScreen = ({episode,onNav,usage}) => {
   const [link,setLink]=useState("");const [tab,setTab]=useState("description");const [outs,setOuts]=useState({});const [busy,setBusy]=useState("");const [dlDone,setDlDone]=useState(false);
   const MTABS = [{ id:"description",l:"وصف الحلقة" },{ id:"social",l:"السوشيال" },{ id:"email",l:"نشرة بريدية" },{ id:"titles",l:"عناوين بديلة" },{ id:"reels",l:"Reels & TikTok ⭐" }];
   const gen=async t=>{
