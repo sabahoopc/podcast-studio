@@ -268,7 +268,6 @@ const toggleMaintenance=async()=>{
                 {[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"12px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"20px",fontWeight:"800",color:T.acc,marginBottom:"3px"}}>{s.v}</div><div style={{fontSize:"10px",color:T.tx2}}>{s.l}</div></div>))}
               </div>
             </Card>
-          </div>}
         </div>
 
         {tab==="settings"&&<div className="fade">
