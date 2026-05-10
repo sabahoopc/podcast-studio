@@ -834,7 +834,97 @@ const AdminScreen = ({onBack}) => {
 };
 
 // ── App ────────────────────────────────────────────────────────────────────
-const App = () => {
+const FeedbackButton = ({user}) => {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
+
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEdqm_emzyI4SZIRvwROdq8etCfNBLXwRCrrT4nEFgArlTGwiQ/exec";
+
+  useEffect(() => {
+    if (user) {
+      setEmail(user.email || "");
+      if (profile?.first_name) setName(profile.first_name + " " + (profile.last_name || ""));
+    }
+  }, [user]);
+
+  const send = async () => {
+    if (!message.trim()) return;
+    setBusy(true);
+    try {
+      await fetch(SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, message }),
+      });
+      setDone(true);
+      setTimeout(() => { setOpen(false); setDone(false); setMessage(""); }, 2000);
+    } catch (e) {}
+    setBusy(false);
+  };
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)} style={{
+        position: "fixed", bottom: "24px", left: "24px", zIndex: 999,
+        background: T.acc, color: "#0d0d14", border: "none", borderRadius: "50px",
+        padding: "12px 20px", fontFamily: "'Noto Kufi Arabic', sans-serif",
+        fontWeight: "700", fontSize: "13px", cursor: "pointer",
+        boxShadow: `0 4px 20px rgba(200,160,80,0.4)`,
+        display: "flex", alignItems: "center", gap: "8px",
+      }}>
+        💬 ملاحظات
+      </button>
+
+      {open && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9998, padding:"16px" }}>
+          <div style={{ background:T.sur, border:`1px solid ${T.brd2}`, borderRadius:"16px", width:"100%", maxWidth:"460px", padding:"28px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px" }}>
+              <div>
+                <div style={{ fontSize:"17px", fontWeight:"700", color:T.tx }}>💬 ملاحظاتك تهمنا</div>
+                <div style={{ color:T.tx2, fontSize:"12px", marginTop:"3px" }}>ساعدنا في تحسين الأداة</div>
+              </div>
+              <button onClick={() => setOpen(false)} style={{ background:"none", border:"none", color:T.tx2, fontSize:"20px", cursor:"pointer" }}>✕</button>
+            </div>
+
+            {done ? (
+              <div style={{ textAlign:"center", padding:"32px 0" }}>
+                <div style={{ fontSize:"40px", marginBottom:"12px" }}>🎉</div>
+                <div style={{ fontSize:"16px", fontWeight:"700", color:T.ok }}>شكراً على ملاحظاتك!</div>
+                <div style={{ color:T.tx2, fontSize:"13px", marginTop:"6px" }}>سنأخذها بعين الاعتبار</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginBottom:"14px" }}>
+                  <div>
+                    <div style={{ fontSize:"11px", color:T.tx2, marginBottom:"6px" }}>الاسم</div>
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder="اسمك" style={{ ...inputStyle }} onFocus={e => e.target.style.borderColor = T.acc} onBlur={e => e.target.style.borderColor = T.brd} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize:"11px", color:T.tx2, marginBottom:"6px" }}>البريد</div>
+                    <input value={email} onChange={e => setEmail(e.target.value)} placeholder="بريدك" style={{ ...inputStyle, direction:"ltr" }} onFocus={e => e.target.style.borderColor = T.acc} onBlur={e => e.target.style.borderColor = T.brd} />
+                  </div>
+                </div>
+                <div style={{ marginBottom:"18px" }}>
+                  <div style={{ fontSize:"11px", color:T.tx2, marginBottom:"6px" }}>ملاحظاتك أو اقتراحاتك</div>
+                  <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder="ما الذي أعجبك؟ ما الذي تريد تحسينه؟" rows={4} style={{ ...inputStyle, resize:"vertical" }} onFocus={e => e.target.style.borderColor = T.acc} onBlur={e => e.target.style.borderColor = T.brd} />
+                </div>
+                <Btn variant="fill" full disabled={!message.trim() || busy} onClick={send}>
+                  {busy ? "جارٍ الإرسال..." : "إرسال ←"}
+                </Btn>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+ const App = () => {
   const [tab,setTab]=useState("create");
   const [showStyle,setShowStyle]=useState(false);
   const [hasStyle,setHasStyle]=useState(()=>{const s=gStyle();return!!(s.tone||s.opening);});
@@ -926,6 +1016,7 @@ setUsage(u||null);
       </div>
 
       <div style={{color:T.tx3,fontSize:"10px",marginTop:"20px",textAlign:"center"}}>المحتوى المولد للاسترشاد والتعديل قبل النشر</div>
+      <FeedbackButton user={user}/>
     </div>
   );
 };
