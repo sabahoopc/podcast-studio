@@ -41,7 +41,7 @@ const Spin=()=>(<div style={{textAlign:"center",padding:"48px"}}><div style={{wi
 const Alrt=({text,type="error"})=>{const c=type==="ok"?T.ok:type==="warn"?T.warn:T.err;return <div style={{padding:"10px 14px",borderRadius:"8px",fontSize:"13px",marginBottom:"14px",background:c+"20",border:`1px solid ${c}40`,color:type==="ok"?T.ok:type==="warn"?"#e8c070":"#e07060"}}>{text}</div>;};
 const PlanBadge=({plan,betaExpires})=>{
   const exp=plan==="beta"&&betaExpires&&new Date(betaExpires)<new Date();
-  const cfg={free:{l:"مجانية",c:T.tx3,bg:"rgba(74,72,96,0.2)"},pro:{l:"مدفوعة",c:T.ok,bg:"rgba(61,158,111,0.15)"},beta:exp?{l:"beta منتهية",c:T.err,bg:"rgba(192,80,64,0.15)"}:{l:"تجربة مبكرة",c:T.warn,bg:"rgba(200,160,80,0.15)"}};
+  const cfg={free:{l:"مجانية",c:T.tx3,bg:"rgba(74,72,96,0.2)"},pro:{l:"مدفوعة",c:T.ok,bg:"rgba(61,158,111,0.15)"},pro2:{l:"احترافية",c:"#9060e0",bg:"rgba(144,96,224,0.15)"},beta:exp?{l:"beta منتهية",c:T.err,bg:"rgba(192,80,64,0.15)"}:{l:"تجربة مبكرة",c:T.warn,bg:"rgba(200,160,80,0.15)"}};
   const s=cfg[plan]||cfg.free;
   return <span style={{fontSize:"11px",fontWeight:"700",padding:"3px 10px",borderRadius:"5px",background:s.bg,color:s.c}}>{s.l}</span>;
 };
