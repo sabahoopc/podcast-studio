@@ -203,6 +203,7 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
   </div>
 );
   const EmailTab=()=>{
+  useEffect(()=>{if(!users.length)load();},[]);
   const[subject,setSubject]=useState("");
   const[body,setBody]=useState("");
   const[audience,setAudience]=useState("all");
