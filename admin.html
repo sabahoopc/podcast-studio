@@ -276,7 +276,7 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
         <div>
           <Card style={{marginBottom:"16px"}}>
             <Field label="الجمهور المستهدف">
-              <select value={audience} onChange={e=>setAudience(e.target.value)} style={{...IS,cursor:"pointer",appearance:"none"}}>
+              <select value={audience} onChange={e=>setAudience(e.target.value)} style={{...IS,cursor:"pointer",appearance:"auto"}}>
                 <option value="all">كل المشتركين ({users.filter(u=>u.profile.email).length})</option>
                 <option value="free">الباقة المجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
                 <option value="pro">الباقة المدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
