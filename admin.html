@@ -27,6 +27,8 @@ const SB_URL="https://qawyirrrprjcklwxgzqu.supabase.co";
 const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
 const sb=supabase.createClient(SB_URL,SB_KEY);
 const ADMIN="sabahoo.pc@gmail.com";
+const RESEND_KEY="re_EMoUR54g_BhTyfSzUCbvXEjWv6RAn53Qx";
+const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEdqm_emzyI4SZIRvwROdq8etCfNBLXwRCrrT4nEFgArlTGwiQ/exec";
 
 const T={bg:"#0d0d14",sur:"#13131e",car:"#1a1a28",brd:"#252535",brd2:"#2e2e42",acc:"#c8a050",accL:"rgba(200,160,80,0.12)",tx:"#e2ddd4",tx2:"#8a8599",tx3:"#4a4860",ok:"#3d9e6f",warn:"#c8a050",err:"#c05040"};
 const IS={width:"100%",background:T.bg,border:`1px solid ${T.brd}`,borderRadius:"8px",padding:"11px 14px",color:T.tx,fontFamily:"'Noto Kufi Arabic',sans-serif",fontSize:"14px",direction:"rtl",outline:"none",boxSizing:"border-box"};
@@ -51,17 +53,8 @@ const Login=({onLogin})=>{
   const go=async()=>{setBusy(true);setErr("");try{const{data,error}=await sb.auth.signInWithPassword({email,password:pw});if(error)throw new Error(error.message);if(data.user?.email!==ADMIN)throw new Error("ليس لديك صلاحية الوصول");onLogin(data.user);}catch(e){setErr(e.message);}setBusy(false);};
   return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",background:T.bg}}>
     <div style={{width:"100%",maxWidth:"380px"}} className="fade">
-      <div style={{textAlign:"center",marginBottom:"32px"}}>
-        <div style={{fontSize:"44px",marginBottom:"10px"}}>⚙</div>
-        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>لوحة الأدمن</div>
-        <div style={{color:T.tx2,fontSize:"13px"}}>استوديو البودكاست</div>
-      </div>
-      <Card>
-        {err&&<Alrt text={err}/>}
-        <Field label="البريد الإلكتروني"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@email.com" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-        <Field label="كلمة المرور"><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-        <Btn variant="fill" full disabled={!email||!pw||busy} onClick={go}>{busy?"جارٍ الدخول...":"دخول"}</Btn>
-      </Card>
+      <div style={{textAlign:"center",marginBottom:"32px"}}><div style={{fontSize:"44px",marginBottom:"10px"}}>⚙</div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>لوحة الأدمن</div><div style={{color:T.tx2,fontSize:"13px"}}>استوديو البودكاست</div></div>
+      <Card>{err&&<Alrt text={err}/>}<Field label="البريد الإلكتروني"><input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="admin@email.com" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field><Field label="كلمة المرور"><input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field><Btn variant="fill" full disabled={!email||!pw||busy} onClick={go}>{busy?"جارٍ الدخول...":"دخول"}</Btn></Card>
     </div>
   </div>);
 };
@@ -78,12 +71,16 @@ const Dashboard=({user,onLogout})=>{
   const[editUser,setEditUser]=useState(null);
   const[ef,setEf]=useState({});
   const[saving,setSaving]=useState(false);
-  const[messages,setMessages]=useState([]);
-const[msgsLoading,setMsgsLoading]=useState(false);
-  const RESEND_KEY="re_EMoUR54g_BhTyfSzUCbvXEjWv6RAn53Qx";
-const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEdqm_emzyI4SZIRvwROdq8etCfNBLXwRCrrT4nEFgArlTGwiQ/exec";
   const[maintenance,setMaintenance]=useState(false);
   const[maintenanceBusy,setMaintenanceBusy]=useState(false);
+  const[messages,setMessages]=useState([]);
+  const[msgsLoading,setMsgsLoading]=useState(false);
+  const[emailSubject,setEmailSubject]=useState("");
+  const[emailBody,setEmailBody]=useState("");
+  const[emailAudience,setEmailAudience]=useState("all");
+  const[emailPreview,setEmailPreview]=useState(false);
+  const[emailSending,setEmailSending]=useState(false);
+  const[emailResult,setEmailResult]=useState({text:"",type:"ok"});
 
   useEffect(()=>{load();loadSettings();loadMessages();},[]);
 
@@ -96,39 +93,17 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
       const c=(u||[]).map(x=>({...x,profile:pm[x.user_id]||{}}));
       setUsers(c);
       const s={total:c.length,free:0,pro:0,beta:0,episodes:0,credits:0};
-      c.forEach(x=>{if(x.plan==="pro")s.pro++;else if(x.plan==="beta")s.beta++;else s.free++;s.episodes+=(x.episodes_used||0);s.credits+=(x.credits||0);});
+      c.forEach(x=>{if(x.plan==="pro"||x.plan==="pro2")s.pro++;else if(x.plan==="beta")s.beta++;else s.free++;s.episodes+=(x.episodes_used||0);s.credits+=(x.credits||0);});
       setStats(s);
     }catch(e){flash("خطأ: "+e.message,"error");}
     setLoading(false);
   };
 
-  const loadMessages=async()=>{
-  setMsgsLoading(true);
-  try{
-    const r=await fetch(SHEETS_URL);
-    const data=await r.json();
-    setMessages(data||[]);
-  }catch(e){flash("خطأ في تحميل الرسائل","error");}
-  setMsgsLoading(false);
-};
-  const loadSettings=async()=>{
-    const{data}=await sb.from("settings").select("*").eq("key","maintenance").single();
-    if(data)setMaintenance(data.value==="true");
-  };
-
-  const toggleMaintenance=async()=>{
-    setMaintenanceBusy(true);
-    const newVal=!maintenance;
-    await sb.from("settings").update({value:newVal?"true":"false",updated_at:new Date().toISOString()}).eq("key","maintenance");
-    setMaintenance(newVal);
-    flash(newVal?"✓ وضع الصيانة مفعّل":"✓ الموقع يعمل بشكل طبيعي","ok");
-    setMaintenanceBusy(false);
-  };
-
+  const loadSettings=async()=>{const{data}=await sb.from("settings").select("*").eq("key","maintenance").single();if(data)setMaintenance(data.value==="true");};
+  const loadMessages=async()=>{setMsgsLoading(true);try{const r=await fetch(SHEETS_URL);const data=await r.json();setMessages(data||[]);}catch{}setMsgsLoading(false);};
+  const toggleMaintenance=async()=>{setMaintenanceBusy(true);const nv=!maintenance;await sb.from("settings").update({value:nv?"true":"false",updated_at:new Date().toISOString()}).eq("key","maintenance");setMaintenance(nv);flash(nv?"✓ وضع الصيانة مفعّل":"✓ الموقع يعمل بشكل طبيعي","ok");setMaintenanceBusy(false);};
   const flash=(text,type="ok")=>{setMsg({text,type});setTimeout(()=>setMsg({text:"",type:"ok"}),3000);};
-
   const openEdit=u=>{setEditUser(u);setEf({plan:u.plan||"free",credits:u.credits||0,notes:u.notes||"",betaDays:"30",fn:u.profile.first_name||"",ln:u.profile.last_name||"",pn:u.profile.podcast_name||""});};
-
   const saveEdit=async()=>{
     if(!editUser)return;setSaving(true);
     try{
@@ -139,13 +114,11 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
       flash("✓ تم الحفظ","ok");setEditUser(null);await load();
     }catch(e){flash("خطأ: "+e.message,"error");}setSaving(false);
   };
-
   const deleteUser=async u=>{
     if(!window.confirm(`حذف ${u.profile.first_name||"هذا المستخدم"}؟`))return;
     try{await sb.from("usage").delete().eq("user_id",u.user_id);await sb.from("profiles").delete().eq("id",u.user_id);flash("✓ تم الحذف","ok");await load();}
     catch(e){flash("خطأ: "+e.message,"error");}
   };
-
   const exportCSV=(type)=>{
     const list=type==="offers"?users.filter(u=>u.profile.accept_offers):users;
     const rows=type==="offers"?[["الاسم","البريد","البودكاست"]]:
@@ -160,60 +133,9 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
     flash(`✓ تم تصدير ${list.length} سجل`,"ok");
   };
 
-  const filtered=users.filter(u=>{
-    const s=`${u.profile.first_name||""} ${u.profile.last_name||""} ${u.profile.email||""} ${u.profile.podcast_name||""}`.toLowerCase();
-    return(!search||s.includes(search.toLowerCase()))&&(!filterPlan||u.plan===filterPlan);
-  });
-
-  const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
-  const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
-
-  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"email",l:"إرسال إيميل",ic:"📧"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
-
-  const MessagesTab=()=>(
-  <div className="fade">
-    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"24px"}}>
-      <div>
-        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>💬 رسائل التواصل</div>
-        <div style={{color:T.tx2,fontSize:"13px"}}>{messages.length} رسالة</div>
-      </div>
-      <Btn small variant="outline" onClick={loadMessages}>↻ تحديث</Btn>
-    </div>
-    {msgsLoading?<Spin/>:messages.length===0?(
-      <Card style={{textAlign:"center",padding:"40px"}}>
-        <div style={{fontSize:"28px",marginBottom:"10px"}}>💬</div>
-        <div style={{color:T.tx2,fontSize:"14px"}}>لا توجد رسائل بعد</div>
-      </Card>
-    ):(
-      <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
-        {messages.map((m,i)=>(
-          <Card key={i} style={{padding:"18px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
-              <div>
-                <div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{m["الاسم"]||"—"}</div>
-                <div style={{color:T.tx2,fontSize:"11px",direction:"ltr",textAlign:"right"}}>{m["البريد"]||"—"}</div>
-              </div>
-              <div style={{fontSize:"11px",color:T.tx3,whiteSpace:"nowrap"}}>{m["التاريخ"]||""}</div>
-            </div>
-            <div style={{background:T.bg,borderRadius:"8px",padding:"12px",fontSize:"13px",color:T.tx,lineHeight:"1.7",border:`1px solid ${T.brd}`}}>{m["الرسالة"]||"—"}</div>
-          </Card>
-        ))}
-      </div>
-    )}
-  </div>
-);
-  const EmailTab=()=>{
-  useEffect(()=>{if(!users.length)load();},[]);
-  const[subject,setSubject]=useState("");
-  const[body,setBody]=useState("");
-  const[audience,setAudience]=useState("all");
-  const[preview,setPreview]=useState(false);
-  const[sending,setSending]=useState(false);
-  const[result,setResult]=useState({text:"",type:"ok"});
-
-  const getRecipients=()=>{
-    switch(audience){
-      case "free": return users.filter(u=>u.plan==="free"&&u.profile.email);
+  const getEmailRecipients=()=>{
+    switch(emailAudience){
+      case "free": return users.filter(u=>(u.plan==="free"||!u.plan)&&u.profile.email);
       case "pro": return users.filter(u=>u.plan==="pro"&&u.profile.email);
       case "pro2": return users.filter(u=>u.plan==="pro2"&&u.profile.email);
       case "beta": return users.filter(u=>u.plan==="beta"&&u.profile.email);
@@ -222,27 +144,22 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
     }
   };
 
-  const buildHTML=(name,bodyText)=>`
+  const buildEmailHTML=(name,bodyText)=>`
     <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0d0d14;color:#e2ddd4;padding:40px 24px;border-radius:12px;">
-      <div style="text-align:center;margin-bottom:32px;">
-        <div style="font-size:28px;margin-bottom:8px;">🎙️</div>
-        <div style="font-size:20px;font-weight:700;color:#c8a050;">استوديو البودكاست</div>
-      </div>
+      <div style="text-align:center;margin-bottom:32px;"><div style="font-size:28px;margin-bottom:8px;">🎙️</div><div style="font-size:20px;font-weight:700;color:#c8a050;">استوديو البودكاست</div></div>
       <p style="font-size:16px;margin-bottom:20px;">مرحباً ${name}،</p>
       <div style="font-size:14px;color:#8a8599;line-height:2;white-space:pre-wrap;">${bodyText}</div>
-      <div style="margin-top:32px;text-align:center;">
-        <a href="https://www.mypcstudio.com" style="display:inline-block;background:#c8a050;color:#0d0d14;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">افتح الأداة ←</a>
-      </div>
+      <div style="margin-top:32px;text-align:center;"><a href="https://www.mypcstudio.com" style="display:inline-block;background:#c8a050;color:#0d0d14;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">افتح الأداة ←</a></div>
       <p style="font-size:11px;color:#4a4860;text-align:center;margin-top:24px;">استوديو البودكاست · mypcstudio.com</p>
     </div>
   `;
 
-  const send=async()=>{
-    if(!subject.trim()||!body.trim())return;
-    const recipients=getRecipients();
-    if(!recipients.length){setResult({text:"لا يوجد مستخدمون في هذه الفئة",type:"error"});return;}
+  const sendEmail=async()=>{
+    if(!emailSubject.trim()||!emailBody.trim())return;
+    const recipients=getEmailRecipients();
+    if(!recipients.length){setEmailResult({text:"لا يوجد مستخدمون في هذه الفئة",type:"error"});return;}
     if(!window.confirm(`إرسال لـ ${recipients.length} مستخدم؟`))return;
-    setSending(true);setResult({text:"",type:"ok"});
+    setEmailSending(true);setEmailResult({text:"",type:"ok"});
     let sent=0;
     for(const u of recipients){
       const name=u.profile.first_name||"عزيزي المستخدم";
@@ -250,126 +167,183 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
         await fetch("https://api.resend.com/emails",{
           method:"POST",
           headers:{"Authorization":`Bearer ${RESEND_KEY}`,"Content-Type":"application/json"},
-          body:JSON.stringify({
-            from:"استوديو البودكاست <hello@mypcstudio.com>",
-            to:u.profile.email,
-            subject,
-            html:buildHTML(name,body),
-          }),
+          body:JSON.stringify({from:"استوديو البودكاست <hello@mypcstudio.com>",to:u.profile.email,subject:emailSubject,html:buildEmailHTML(name,emailBody)}),
         });
         sent++;
       }catch{}
     }
-    setResult({text:`✓ تم الإرسال لـ ${sent} مستخدم`,type:"ok"});
-    setSending(false);
+    setEmailResult({text:`✓ تم الإرسال لـ ${sent} مستخدم`,type:"ok"});
+    setEmailSending(false);
   };
 
-  const recipients=getRecipients();
+  const filtered=users.filter(u=>{
+    const s=`${u.profile.first_name||""} ${u.profile.last_name||""} ${u.profile.email||""} ${u.profile.podcast_name||""}`.toLowerCase();
+    return(!search||s.includes(search.toLowerCase()))&&(!filterPlan||u.plan===filterPlan);
+  });
+  const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
+  const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
+  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"email",l:"إرسال إيميل",ic:"📧"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
 
-  return(
-    <div className="fade">
-      <div style={{marginBottom:"28px"}}>
-        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>📧 إرسال إيميل</div>
-        <div style={{color:T.tx2,fontSize:"13px"}}>أرسل إيميلاً منسقاً لمجموعة من المشتركين</div>
-      </div>
-      {result.text&&<Alrt text={result.text} type={result.type}/>}
-      <div style={{display:"grid",gridTemplateColumns:preview?"1fr 1fr":"1fr",gap:"20px"}}>
-        <div>
-          <Card style={{marginBottom:"16px"}}>
-           <Field label="الجمهور المستهدف">
-  <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
-    {[
-      {v:"all",l:`الكل (${users.filter(u=>u.profile.email).length})`},
-      {v:"free",l:`مجانية (${users.filter(u=>u.plan==="free"&&u.profile.email).length})`},
-      {v:"pro",l:`مدفوعة (${users.filter(u=>u.plan==="pro"&&u.profile.email).length})`},
-      {v:"pro2",l:`احترافية (${users.filter(u=>u.plan==="pro2"&&u.profile.email).length})`},
-      {v:"beta",l:`تجربة مبكرة (${users.filter(u=>u.plan==="beta"&&u.profile.email).length})`},
-      {v:"offers",l:`وافقوا على العروض (${users.filter(u=>u.profile.accept_offers&&u.profile.email).length})`},
-    ].map(o=>(
-      <button key={o.v} onClick={()=>setAudience(o.v)} style={{
-        padding:"8px 14px",borderRadius:"8px",cursor:"pointer",fontSize:"12px",fontWeight:"600",
-        fontFamily:"'Noto Kufi Arabic',sans-serif",
-        background:audience===o.v?T.accL:"transparent",
-        border:`1px solid ${audience===o.v?T.acc:T.brd2}`,
-        color:audience===o.v?T.acc:T.tx2,
-        transition:"all 0.2s",
-      }}>{o.l}</button>
-    ))}
-  </div>
-</Field>
-            <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
-              سيُرسَل لـ <strong style={{color:T.acc}}>{recipients.length} مستخدم</strong>
-            </div>
-            <Field label="عنوان الإيميل">
-              <input value={subject} onChange={e=>setSubject(e.target.value)} placeholder="مثال: تحديث جديد في الأداة 🎙️" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
-            </Field>
-            <Field label="نص الرسالة">
-              <textarea value={body} onChange={e=>setBody(e.target.value)} rows={10} placeholder="اكتب رسالتك هنا...&#10;&#10;يمكنك استخدام أسطر متعددة للتنسيق." style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
-            </Field>
-            <div style={{display:"flex",gap:"10px"}}>
-              <Btn variant="outline" onClick={()=>setPreview(!preview)}>{preview?"إخفاء المعاينة":"معاينة الإيميل"}</Btn>
-              <Btn variant="fill" disabled={!subject.trim()||!body.trim()||sending||!recipients.length} onClick={send} full>
-                {sending?`جارٍ الإرسال...`:`إرسال لـ ${recipients.length} مستخدم ←`}
-              </Btn>
-            </div>
-          </Card>
-        </div>
-        {preview&&(
-          <div>
-            <div style={{fontSize:"12px",color:T.tx2,marginBottom:"10px",fontWeight:"700"}}>معاينة الإيميل:</div>
-            <div style={{background:"#fff",borderRadius:"12px",overflow:"hidden",border:`1px solid ${T.brd}`}}>
-              <div style={{background:"#f5f5f5",padding:"10px 16px",fontSize:"12px",color:"#666",borderBottom:"1px solid #ddd"}}>
-                <strong>من:</strong> استوديو البودكاست &lt;hello@mypcstudio.com&gt;<br/>
-                <strong>الموضوع:</strong> {subject||"(بدون عنوان)"}
-              </div>
-              <div dangerouslySetInnerHTML={{__html:body?`
-                <div dir="rtl" style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#0d0d14;color:#e2ddd4;padding:40px 24px;">
-                  <div style="text-align:center;margin-bottom:32px;">
-                    <div style="font-size:28px;margin-bottom:8px;">🎙️</div>
-                    <div style="font-size:20px;font-weight:700;color:#c8a050;">استوديو البودكاست</div>
-                  </div>
-                  <p style="font-size:16px;margin-bottom:20px;">مرحباً [الاسم]،</p>
-                  <div style="font-size:14px;color:#8a8599;line-height:2;white-space:pre-wrap;">${body}</div>
-                  <div style="margin-top:32px;text-align:center;">
-                    <a href="#" style="display:inline-block;background:#c8a050;color:#0d0d14;font-weight:700;font-size:14px;padding:12px 28px;border-radius:8px;text-decoration:none;">افتح الأداة ←</a>
-                  </div>
-                  <p style="font-size:11px;color:#4a4860;text-align:center;margin-top:24px;">استوديو البودكاست · mypcstudio.com</p>
-                </div>
-              `:"<p style='padding:20px;color:#999;text-align:center'>اكتب نص الرسالة لترى المعاينة</p>"}}/>
-            </div>
-          </div>
-        )}
-      </div>
+  const emailRecipients=getEmailRecipients();
+  const audienceOptions=[
+    {v:"all",l:`الكل (${users.filter(u=>u.profile.email).length})`},
+    {v:"free",l:`مجانية (${users.filter(u=>(u.plan==="free"||!u.plan)&&u.profile.email).length})`},
+    {v:"pro",l:`مدفوعة (${users.filter(u=>u.plan==="pro"&&u.profile.email).length})`},
+    {v:"pro2",l:`احترافية (${users.filter(u=>u.plan==="pro2"&&u.profile.email).length})`},
+    {v:"beta",l:`تجربة مبكرة (${users.filter(u=>u.plan==="beta"&&u.profile.email).length})`},
+    {v:"offers",l:`وافقوا على العروض (${users.filter(u=>u.profile.accept_offers&&u.profile.email).length})`},
+  ];
+
+  const OverviewTab=()=>(<div className="fade">
+    <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>نظرة عامة</div><div style={{color:T.tx2,fontSize:"13px"}}>إحصاءات استوديو البودكاست</div></div>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(3,1fr)",gap:"14px",marginBottom:"28px"}}>
+      <StatCard ic="👥" l="إجمالي المستخدمين" v={stats.total} c={T.acc}/><StatCard ic="🆓" l="باقة مجانية" v={stats.free} c={T.tx2}/><StatCard ic="💎" l="باقة مدفوعة" v={stats.pro} c={T.ok}/><StatCard ic="🧪" l="تجربة مبكرة" v={stats.beta} c={T.warn}/><StatCard ic="🎙️" l="حلقات مولّدة" v={stats.episodes} c={T.acc}/><StatCard ic="⚡" l="كريديت متبقٍ" v={stats.credits} c={T.warn}/>
     </div>
-  );
-};
-  const SettingsTab=()=>(
-    <div className="fade">
-      <div style={{marginBottom:"28px"}}>
-        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>إعدادات الموقع</div>
-        <div style={{color:T.tx2,fontSize:"13px"}}>التحكم في حالة الموقع</div>
-      </div>
-      <Card>
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"16px"}}>
-          <div>
-            <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>وضع الصيانة</div>
-            <div style={{fontSize:"13px",color:T.tx2,lineHeight:"1.7",maxWidth:"400px"}}>عند التفعيل يرى الزوار صفحة "الموقع تحت الصيانة" بدل الأداة.</div>
-            <div style={{marginTop:"10px"}}>
-              <span style={{fontSize:"12px",fontWeight:"700",padding:"4px 12px",borderRadius:"6px",background:maintenance?"rgba(192,80,64,0.15)":"rgba(61,158,111,0.15)",color:maintenance?T.err:T.ok}}>
-                {maintenance?"🔴 الصيانة مفعّلة":"🟢 الموقع يعمل بشكل طبيعي"}
-              </span>
-            </div>
+    <Card>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}><div style={{fontSize:"14px",fontWeight:"700",color:T.tx}}>آخر المسجلين</div><Btn small variant="outline" onClick={load}>↻ تحديث</Btn></div>
+      {loading?<Spin/>:(<div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+        <thead><tr style={{borderBottom:`1px solid ${T.brd}`}}>{["الاسم","البريد","البودكاست","الباقة","الاستخدام","التسجيل"].map(h=>(<th key={h} style={{padding:"8px 12px",color:T.tx2,textAlign:"right",fontWeight:"600",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
+        <tbody>{users.slice(0,10).map(u=>(<tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`}}>
+          <td style={{padding:"10px 12px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
+          <td style={{padding:"10px 12px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.profile.email||u.user_id.slice(0,14)+"..."}</td>
+          <td style={{padding:"10px 12px",color:T.tx2}}>{u.profile.podcast_name||"—"}</td>
+          <td style={{padding:"10px 12px"}}><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></td>
+          <td style={{padding:"10px 12px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}</td>
+          <td style={{padding:"10px 12px",color:T.tx3,fontSize:"11px"}}>{new Date(u.created_at).toLocaleDateString("ar-SA")}</td>
+        </tr>))}</tbody>
+      </table></div>)}
+    </Card>
+  </div>);
+
+  const UsersTab=()=>(<div className="fade">
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:isMobile?"14px":"22px"}}>
+      <div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>المشتركون</div><div style={{color:T.tx2,fontSize:"13px"}}>{filtered.length} من {users.length}</div></div>
+      <Btn small variant="outline" onClick={load}>↻ تحديث</Btn>
+    </div>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr auto",gap:"12px",marginBottom:"18px"}}>
+      <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث..." style={{...IS,padding:"10px 14px"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+      {!isMobile&&<select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{...IS,width:"auto",minWidth:"150px",cursor:"pointer",appearance:"none"}}>
+        <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
+      </select>}
+    </div>
+    {loading?<Spin/>:isMobile?(
+      <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
+        {filtered.map(u=>{const d=betaDays(u);return(<Card key={u.user_id} style={{padding:"14px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
+            <div><div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</div><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></div>
+            <div style={{display:"flex",gap:"6px"}}><Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn><Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn></div>
           </div>
-          <Btn variant="fill" color={maintenance?T.ok:T.err} disabled={maintenanceBusy} onClick={toggleMaintenance}>
-            {maintenanceBusy?"جارٍ...":maintenance?"✓ تشغيل الموقع":"🔧 تفعيل الصيانة"}
-          </Btn>
-        </div>
+          <div style={{color:T.tx2,fontSize:"11px",marginBottom:"3px",direction:"ltr",textAlign:"right"}}>{u.profile.email||"—"}</div>
+          <div style={{color:T.tx2,fontSize:"11px",marginBottom:"3px"}}>{u.profile.podcast_name||"بدون بودكاست"}</div>
+          <div style={{display:"flex",gap:"12px",marginTop:"6px"}}>
+            <span style={{fontSize:"11px",color:T.tx2}}>استخدام: <strong style={{color:T.tx}}>{u.episodes_used||0}</strong></span>
+            <span style={{fontSize:"11px",color:T.tx2}}>كريديت: <strong style={{color:T.acc}}>{u.credits||0}</strong></span>
+            {d!==null&&<span style={{fontSize:"11px",color:d<3?T.err:d<7?T.warn:T.ok,fontWeight:"700"}}>{d>0?d+" يوم":"منتهية"}</span>}
+          </div>
+        </Card>);})}
+      </div>
+    ):(
+      <Card style={{padding:"0",overflow:"hidden"}}>
+        <div style={{overflowX:"auto"}}><table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
+          <thead><tr style={{background:T.sur,borderBottom:`1px solid ${T.brd}`}}>{["الاسم","البريد","البودكاست","الباقة","استخدام","كريديت","beta","ملاحظات","إجراء"].map(h=>(<th key={h} style={{padding:"12px 14px",color:T.tx2,textAlign:"right",fontWeight:"600",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
+          <tbody>{filtered.map(u=>{const d=betaDays(u);return(<tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`,transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=T.sur} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
+            <td style={{padding:"11px 14px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
+            <td style={{padding:"11px 14px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.profile.email||u.user_id.slice(0,12)+"..."}</td>
+            <td style={{padding:"11px 14px",color:T.tx2,maxWidth:"110px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.profile.podcast_name||"—"}</td>
+            <td style={{padding:"11px 14px"}}><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></td>
+            <td style={{padding:"11px 14px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}</td>
+            <td style={{padding:"11px 14px",color:T.acc,textAlign:"center",fontWeight:"700"}}>{u.credits||0}</td>
+            <td style={{padding:"11px 14px",textAlign:"center"}}>{d!==null?<span style={{color:d<3?T.err:d<7?T.warn:T.ok,fontSize:"11px",fontWeight:"700"}}>{d>0?d+" يوم":"منتهية"}</span>:"—"}</td>
+            <td style={{padding:"11px 14px",color:T.tx2,maxWidth:"100px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.notes||"—"}</td>
+            <td style={{padding:"11px 14px"}}><div style={{display:"flex",gap:"6px"}}><Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn><Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn></div></td>
+          </tr>);})}
+          </tbody>
+        </table></div>
       </Card>
+    )}
+  </div>);
+
+  const MessagesTab=()=>(<div className="fade">
+    <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"24px"}}>
+      <div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>💬 رسائل التواصل</div><div style={{color:T.tx2,fontSize:"13px"}}>{messages.length} رسالة</div></div>
+      <Btn small variant="outline" onClick={loadMessages}>↻ تحديث</Btn>
     </div>
-  );
+    {msgsLoading?<Spin/>:messages.length===0?(<Card style={{textAlign:"center",padding:"40px"}}><div style={{fontSize:"28px",marginBottom:"10px"}}>💬</div><div style={{color:T.tx2,fontSize:"14px"}}>لا توجد رسائل بعد</div></Card>):(
+      <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+        {messages.map((m,i)=>(<Card key={i} style={{padding:"18px"}}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
+            <div><div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{m["الاسم"]||"—"}</div><div style={{color:T.tx2,fontSize:"11px",direction:"ltr",textAlign:"right"}}>{m["البريد"]||"—"}</div></div>
+            <div style={{fontSize:"11px",color:T.tx3,whiteSpace:"nowrap"}}>{m["التاريخ"]||""}</div>
+          </div>
+          <div style={{background:T.bg,borderRadius:"8px",padding:"12px",fontSize:"13px",color:T.tx,lineHeight:"1.7",border:`1px solid ${T.brd}`}}>{m["الرسالة"]||"—"}</div>
+        </Card>))}
+      </div>
+    )}
+  </div>);
+
+  const EmailTab=()=>(<div className="fade">
+    <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>📧 إرسال إيميل</div><div style={{color:T.tx2,fontSize:"13px"}}>أرسل إيميلاً منسقاً لمجموعة من المشتركين</div></div>
+    {emailResult.text&&<Alrt text={emailResult.text} type={emailResult.type}/>}
+    <div style={{display:"grid",gridTemplateColumns:emailPreview&&!isMobile?"1fr 1fr":"1fr",gap:"20px"}}>
+      <div>
+        <Card style={{marginBottom:"16px"}}>
+          <Field label="الجمهور المستهدف">
+            <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
+              {audienceOptions.map(o=>(<button key={o.v} onClick={()=>setEmailAudience(o.v)} style={{padding:"8px 14px",borderRadius:"8px",cursor:"pointer",fontSize:"12px",fontWeight:"600",fontFamily:"'Noto Kufi Arabic',sans-serif",background:emailAudience===o.v?T.accL:"transparent",border:`1px solid ${emailAudience===o.v?T.acc:T.brd2}`,color:emailAudience===o.v?T.acc:T.tx2,transition:"all 0.2s"}}>{o.l}</button>))}
+            </div>
+          </Field>
+          <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
+            سيُرسَل لـ <strong style={{color:T.acc}}>{emailRecipients.length} مستخدم</strong>
+          </div>
+          <Field label="عنوان الإيميل"><input value={emailSubject} onChange={e=>setEmailSubject(e.target.value)} placeholder="مثال: تحديث جديد في الأداة 🎙️" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+          <Field label="نص الرسالة"><textarea value={emailBody} onChange={e=>setEmailBody(e.target.value)} rows={8} placeholder="اكتب رسالتك هنا..." style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
+          <div style={{display:"flex",gap:"10px",flexWrap:"wrap"}}>
+            {!isMobile&&<Btn variant="outline" onClick={()=>setEmailPreview(!emailPreview)}>{emailPreview?"إخفاء المعاينة":"معاينة الإيميل"}</Btn>}
+            <Btn variant="fill" disabled={!emailSubject.trim()||!emailBody.trim()||emailSending||!emailRecipients.length} onClick={sendEmail} full={isMobile}>
+              {emailSending?`جارٍ الإرسال...`:`إرسال لـ ${emailRecipients.length} مستخدم ←`}
+            </Btn>
+          </div>
+        </Card>
+      </div>
+      {emailPreview&&!isMobile&&(<div>
+        <div style={{fontSize:"12px",color:T.tx2,marginBottom:"10px",fontWeight:"700"}}>معاينة الإيميل:</div>
+        <div style={{background:"#fff",borderRadius:"12px",overflow:"hidden",border:`1px solid ${T.brd}`}}>
+          <div style={{background:"#f5f5f5",padding:"10px 16px",fontSize:"12px",color:"#666",borderBottom:"1px solid #ddd"}}><strong>من:</strong> استوديو البودكاست &lt;hello@mypcstudio.com&gt;<br/><strong>الموضوع:</strong> {emailSubject||"(بدون عنوان)"}</div>
+          <div dangerouslySetInnerHTML={{__html:emailBody?buildEmailHTML("[الاسم]",emailBody):"<p style='padding:20px;color:#999;text-align:center'>اكتب نص الرسالة لترى المعاينة</p>"}}/>
+        </div>
+      </div>)}
+    </div>
+  </div>);
+
+  const ExportTab=()=>(<div className="fade">
+    <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>تصدير البيانات</div><div style={{color:T.tx2,fontSize:"13px"}}>تصدير وإحصاءات المشتركين</div></div>
+    <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"20px",marginBottom:"20px"}}>
+      <Card><div style={{fontSize:"28px",marginBottom:"10px"}}>📊</div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>تصدير كل المشتركين</div><div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>ملف CSV يشمل كل البيانات.</div><Btn variant="fill" onClick={()=>exportCSV("all")}>⬇ تصدير CSV</Btn></Card>
+      <Card><div style={{fontSize:"28px",marginBottom:"10px"}}>📧</div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>قائمة العروض</div><div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>من وافقوا على استقبال العروض فقط.</div><Btn variant="fill" onClick={()=>exportCSV("offers")}>⬇ تصدير قائمة العروض</Btn></Card>
+    </div>
+    <Card><div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>📋 ملخص إحصائي</div>
+      <div style={{display:"grid",gridTemplateColumns:isMobile?"1fr 1fr":"repeat(4,1fr)",gap:"14px"}}>
+        {[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"14px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"24px",fontWeight:"800",color:T.acc,marginBottom:"4px"}}>{s.v}</div><div style={{fontSize:"11px",color:T.tx2}}>{s.l}</div></div>))}
+      </div>
+    </Card>
+  </div>);
+
+  const SettingsTab=()=>(<div className="fade">
+    <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>إعدادات الموقع</div><div style={{color:T.tx2,fontSize:"13px"}}>التحكم في حالة الموقع</div></div>
+    <Card>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:"16px"}}>
+        <div>
+          <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>وضع الصيانة</div>
+          <div style={{fontSize:"13px",color:T.tx2,lineHeight:"1.7",maxWidth:"400px"}}>عند التفعيل يرى الزوار صفحة "الموقع تحت الصيانة" بدل الأداة.</div>
+          <div style={{marginTop:"10px"}}><span style={{fontSize:"12px",fontWeight:"700",padding:"4px 12px",borderRadius:"6px",background:maintenance?"rgba(192,80,64,0.15)":"rgba(61,158,111,0.15)",color:maintenance?T.err:T.ok}}>{maintenance?"🔴 الصيانة مفعّلة":"🟢 الموقع يعمل بشكل طبيعي"}</span></div>
+        </div>
+        <Btn variant="fill" color={maintenance?T.ok:T.err} disabled={maintenanceBusy} onClick={toggleMaintenance}>{maintenanceBusy?"جارٍ...":maintenance?"✓ تشغيل الموقع":"🔧 تفعيل الصيانة"}</Btn>
+      </div>
+    </Card>
+  </div>);
 
   const EditModal=()=>editUser&&(
-    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:isMobile?"flex":"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:9999,padding:isMobile?"0":"16px"}}>
+    <div style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.85)",display:"flex",alignItems:isMobile?"flex-end":"center",justifyContent:"center",zIndex:9999,padding:isMobile?"0":"16px"}}>
       <div style={{background:T.sur,borderRadius:isMobile?"16px 16px 0 0":"12px",width:"100%",maxWidth:isMobile?"100%":"480px",maxHeight:"90vh",overflowY:"auto",padding:"24px 20px"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}}>
           <div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>✏️ تعديل المستخدم</div>
@@ -381,11 +355,7 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
           <Field label="الاسم الأخير"><input value={ef.ln} onChange={e=>setEf({...ef,ln:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
         </div>
         <Field label="اسم البودكاست"><input value={ef.pn} onChange={e=>setEf({...ef,pn:e.target.value})} style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
-        <Field label="الباقة">
-          <select value={ef.plan} onChange={e=>setEf({...ef,plan:e.target.value})} style={{...IS,cursor:"pointer",appearance:"none"}}>
-            <option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
-          </select>
-        </Field>
+        <Field label="الباقة"><select value={ef.plan} onChange={e=>setEf({...ef,plan:e.target.value})} style={{...IS,cursor:"pointer",appearance:"none"}}><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option></select></Field>
         {ef.plan==="beta"&&<Field label="مدة التجربة (أيام)"><input value={ef.betaDays} onChange={e=>setEf({...ef,betaDays:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>}
         <Field label="الكريديت"><input value={ef.credits} onChange={e=>setEf({...ef,credits:e.target.value})} type="number" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
         <Field label="ملاحظات"><textarea value={ef.notes} onChange={e=>setEf({...ef,notes:e.target.value})} rows={2} style={{...IS,resize:"vertical"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/></Field>
@@ -397,214 +367,49 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
     </div>
   );
 
+  const tabContent={overview:<OverviewTab/>,users:<UsersTab/>,messages:<MessagesTab/>,email:<EmailTab/>,export:<ExportTab/>,settings:<SettingsTab/>};
+
   if(isMobile){
-    return(
-      <div style={{minHeight:"100vh",background:T.bg,paddingBottom:"70px"}}>
-        <div style={{background:T.sur,borderBottom:`1px solid ${T.brd}`,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50}}>
-          <div>
-            <div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>⚙ لوحة الأدمن</div>
-            <div style={{fontSize:"11px",color:T.tx3,marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"200px"}}>{user.email}</div>
-          </div>
-          <div style={{display:"flex",gap:"8px"}}>
-            <a href="/app" style={{padding:"7px 12px",borderRadius:"7px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"11px",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>الأداة</a>
-            <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"7px 12px",borderRadius:"7px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"11px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>خروج</button>
-          </div>
+    return(<div style={{minHeight:"100vh",background:T.bg,paddingBottom:"70px"}}>
+      <div style={{background:T.sur,borderBottom:`1px solid ${T.brd}`,padding:"14px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50}}>
+        <div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>⚙ لوحة الأدمن</div><div style={{fontSize:"11px",color:T.tx3,marginTop:"2px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap",maxWidth:"200px"}}>{user.email}</div></div>
+        <div style={{display:"flex",gap:"8px"}}>
+          <a href="/app" style={{padding:"7px 12px",borderRadius:"7px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"11px",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>الأداة</a>
+          <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"7px 12px",borderRadius:"7px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"11px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>خروج</button>
         </div>
-        <div style={{padding:"16px"}}>
-          {msg.text&&<Alrt text={msg.text} type={msg.type}/>}
-          {tab==="overview"&&(
-            <div className="fade">
-              <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",marginBottom:"16px"}}>
-                <StatCard ic="👥" l="إجمالي" v={stats.total} c={T.acc}/>
-                <StatCard ic="🆓" l="مجانية" v={stats.free} c={T.tx2}/>
-                <StatCard ic="💎" l="مدفوعة" v={stats.pro} c={T.ok}/>
-                <StatCard ic="🧪" l="تجربة مبكرة" v={stats.beta} c={T.warn}/>
-                <StatCard ic="🎙️" l="حلقات مولّدة" v={stats.episodes} c={T.acc}/>
-                <StatCard ic="⚡" l="كريديت متبقٍ" v={stats.credits} c={T.warn}/>
-              </div>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px"}}>
-                <div style={{fontSize:"14px",fontWeight:"700",color:T.tx}}>آخر المسجلين</div>
-                <Btn small variant="outline" onClick={load}>↻</Btn>
-              </div>
-              {loading?<Spin/>:(
-                <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-                  {users.slice(0,8).map(u=>(<Card key={u.user_id} style={{padding:"14px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"6px"}}>
-                      <div style={{fontWeight:"700",color:T.tx,fontSize:"14px"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</div>
-                      <PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/>
-                    </div>
-                    <div style={{color:T.tx2,fontSize:"11px",marginBottom:"4px",direction:"ltr",textAlign:"right"}}>{u.profile.email||"—"}</div>
-                    <div style={{color:T.tx2,fontSize:"11px"}}>{u.profile.podcast_name||"بدون بودكاست"} · {u.episodes_used||0} حلقة</div>
-                  </Card>))}
-                </div>
-              )}
-            </div>
-          )}
-          {tab==="users"&&(
-            <div className="fade">
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"14px"}}>
-                <div style={{fontSize:"15px",fontWeight:"700",color:T.tx}}>{filtered.length} من {users.length}</div>
-                <Btn small variant="outline" onClick={load}>↻</Btn>
-              </div>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث..." style={{...IS,marginBottom:"10px"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
-              <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{...IS,cursor:"pointer",appearance:"none",marginBottom:"14px"}}>
-                <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
-              </select>
-              {loading?<Spin/>:(
-                <div style={{display:"flex",flexDirection:"column",gap:"10px"}}>
-                  {filtered.map(u=>{const d=betaDays(u);return(<Card key={u.user_id} style={{padding:"14px"}}>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px"}}>
-                      <div><div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</div><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></div>
-                      <div style={{display:"flex",gap:"6px"}}><Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn><Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn></div>
-                    </div>
-                    <div style={{color:T.tx2,fontSize:"11px",marginBottom:"3px",direction:"ltr",textAlign:"right"}}>{u.profile.email||"—"}</div>
-                    <div style={{color:T.tx2,fontSize:"11px",marginBottom:"3px"}}>{u.profile.podcast_name||"بدون بودكاست"}</div>
-                    <div style={{display:"flex",gap:"12px",marginTop:"6px"}}>
-                      <span style={{fontSize:"11px",color:T.tx2}}>استخدام: <strong style={{color:T.tx}}>{u.episodes_used||0}</strong></span>
-                      <span style={{fontSize:"11px",color:T.tx2}}>كريديت: <strong style={{color:T.acc}}>{u.credits||0}</strong></span>
-                      {d!==null&&<span style={{fontSize:"11px",color:d<3?T.err:d<7?T.warn:T.ok,fontWeight:"700"}}>{d>0?d+" يوم":"منتهية"}</span>}
-                    </div>
-                  </Card>);})}
-                </div>
-              )}
-            </div>
-          )}
-          {tab==="export"&&(
-            <div className="fade">
-              <div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>تصدير البيانات</div>
-              <div style={{display:"flex",flexDirection:"column",gap:"12px",marginBottom:"16px"}}>
-                <Card style={{padding:"16px"}}><div style={{fontSize:"22px",marginBottom:"8px"}}>📊</div><div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>تصدير كل المشتركين</div><div style={{fontSize:"12px",color:T.tx2,marginBottom:"14px"}}>ملف CSV بكل البيانات</div><Btn variant="fill" full onClick={()=>exportCSV("all")}>⬇ تصدير CSV</Btn></Card>
-                <Card style={{padding:"16px"}}><div style={{fontSize:"22px",marginBottom:"8px"}}>📧</div><div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>قائمة العروض</div><div style={{fontSize:"12px",color:T.tx2,marginBottom:"14px"}}>من وافقوا على استقبال العروض فقط</div><Btn variant="fill" full onClick={()=>exportCSV("offers")}>⬇ تصدير قائمة العروض</Btn></Card>
-              </div>
-              <Card><div style={{fontSize:"13px",fontWeight:"700",color:T.tx,marginBottom:"14px"}}>📋 ملخص</div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px"}}>{[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"12px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"20px",fontWeight:"800",color:T.acc,marginBottom:"3px"}}>{s.v}</div><div style={{fontSize:"10px",color:T.tx2}}>{s.l}</div></div>))}</div></Card>
-            </div>
-          )}
-          {tab==="messages"&&<MessagesTab/>}
-          {tab==="email"&&<EmailTab/>}
-          {tab==="settings"&&<SettingsTab/>}
-        </div>
-        <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.sur,borderTop:`1px solid ${T.brd}`,display:"flex",padding:"8px 0",zIndex:50}}>
-          {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:"transparent",border:"none",cursor:"pointer",padding:"6px 0",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}>
-            <span style={{fontSize:"18px"}}>{t.ic}</span>
-            <span style={{fontSize:"10px",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:tab===t.id?"700":"400"}}>{t.l}</span>
-          </button>))}
-        </div>
-        <EditModal/>
       </div>
-    );
+      <div style={{padding:"16px"}}>{msg.text&&<Alrt text={msg.text} type={msg.type}/>}{tabContent[tab]}</div>
+      <div style={{position:"fixed",bottom:0,left:0,right:0,background:T.sur,borderTop:`1px solid ${T.brd}`,display:"flex",padding:"8px 0",zIndex:50,overflowX:"auto"}}>
+        {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{flex:"0 0 auto",minWidth:"60px",background:"transparent",border:"none",cursor:"pointer",padding:"6px 8px",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}>
+          <span style={{fontSize:"16px"}}>{t.ic}</span>
+          <span style={{fontSize:"9px",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:tab===t.id?"700":"400",whiteSpace:"nowrap"}}>{t.l}</span>
+        </button>))}
+      </div>
+      <EditModal/>
+    </div>);
   }
 
-  return(
-    <div style={{minHeight:"100vh",background:T.bg,display:"flex"}}>
-      <div style={{position:"fixed",top:0,right:0,bottom:0,width:"230px",background:T.sur,borderLeft:`1px solid ${T.brd}`,display:"flex",flexDirection:"column",padding:"28px 16px",zIndex:100}}>
-        <div style={{marginBottom:"32px"}}>
-          <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"12px"}}>
-            <div style={{width:"7px",height:"7px",borderRadius:"50%",background:T.acc,boxShadow:`0 0 8px ${T.acc}`}}/>
-            <span style={{fontSize:"10px",color:T.tx2,letterSpacing:"0.1em"}}>PODCAST STUDIO</span>
-          </div>
-          <div style={{fontSize:"17px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>⚙ لوحة الأدمن</div>
-          <div style={{fontSize:"11px",color:T.tx3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</div>
-        </div>
-        <nav style={{flex:1,display:"flex",flexDirection:"column",gap:"4px"}}>
-          {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?T.accL:"transparent",border:`1px solid ${tab===t.id?T.acc:T.brd}`,borderRadius:"8px",padding:"11px 14px",cursor:"pointer",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"600",fontSize:"13px",textAlign:"right",display:"flex",alignItems:"center",gap:"8px",transition:"all 0.2s"}}><span>{t.ic}</span>{t.l}</button>))}
-        </nav>
-        <div style={{borderTop:`1px solid ${T.brd}`,paddingTop:"16px",display:"flex",flexDirection:"column",gap:"8px"}}>
-          <a href="/app" style={{display:"block",padding:"10px 14px",borderRadius:"8px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"12px",textAlign:"center",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>← العودة للأداة</a>
-          <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"10px 14px",borderRadius:"8px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"12px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>تسجيل الخروج</button>
-        </div>
+  return(<div style={{minHeight:"100vh",background:T.bg,display:"flex"}}>
+    <div style={{position:"fixed",top:0,right:0,bottom:0,width:"230px",background:T.sur,borderLeft:`1px solid ${T.brd}`,display:"flex",flexDirection:"column",padding:"28px 16px",zIndex:100}}>
+      <div style={{marginBottom:"32px"}}>
+        <div style={{display:"flex",alignItems:"center",gap:"8px",marginBottom:"12px"}}><div style={{width:"7px",height:"7px",borderRadius:"50%",background:T.acc,boxShadow:`0 0 8px ${T.acc}`}}/><span style={{fontSize:"10px",color:T.tx2,letterSpacing:"0.1em"}}>PODCAST STUDIO</span></div>
+        <div style={{fontSize:"17px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>⚙ لوحة الأدمن</div>
+        <div style={{fontSize:"11px",color:T.tx3,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{user.email}</div>
       </div>
-      <div style={{marginRight:"230px",padding:"32px",flex:1,minWidth:0}}>
-        {msg.text&&<Alrt text={msg.text} type={msg.type}/>}
-        {tab==="overview"&&(
-          <div className="fade">
-            <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>نظرة عامة</div><div style={{color:T.tx2,fontSize:"13px"}}>إحصاءات استوديو البودكاست</div></div>
-            <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"14px",marginBottom:"28px"}}>
-              <StatCard ic="👥" l="إجمالي المستخدمين" v={stats.total} c={T.acc}/>
-              <StatCard ic="🆓" l="باقة مجانية" v={stats.free} c={T.tx2}/>
-              <StatCard ic="💎" l="باقة مدفوعة" v={stats.pro} c={T.ok}/>
-              <StatCard ic="🧪" l="تجربة مبكرة" v={stats.beta} c={T.warn}/>
-              <StatCard ic="🎙️" l="حلقات مولّدة" v={stats.episodes} c={T.acc}/>
-              <StatCard ic="⚡" l="كريديت متبقٍ" v={stats.credits} c={T.warn}/>
-            </div>
-            <Card>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"16px"}}>
-                <div style={{fontSize:"14px",fontWeight:"700",color:T.tx}}>آخر المسجلين</div>
-                <Btn small variant="outline" onClick={load}>↻ تحديث</Btn>
-              </div>
-              {loading?<Spin/>:(
-                <div style={{overflowX:"auto"}}>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
-                    <thead><tr style={{borderBottom:`1px solid ${T.brd}`}}>{["الاسم","البريد","البودكاست","الباقة","الاستخدام","التسجيل"].map(h=>(<th key={h} style={{padding:"8px 12px",color:T.tx2,textAlign:"right",fontWeight:"600",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
-                    <tbody>{users.slice(0,10).map(u=>(<tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`}}>
-                      <td style={{padding:"10px 12px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
-                      <td style={{padding:"10px 12px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.profile.email||u.user_id.slice(0,14)+"..."}</td>
-                      <td style={{padding:"10px 12px",color:T.tx2}}>{u.profile.podcast_name||"—"}</td>
-                      <td style={{padding:"10px 12px"}}><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></td>
-                      <td style={{padding:"10px 12px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}</td>
-                      <td style={{padding:"10px 12px",color:T.tx3,fontSize:"11px"}}>{new Date(u.created_at).toLocaleDateString("ar-SA")}</td>
-                    </tr>))}</tbody>
-                  </table>
-                </div>
-              )}
-            </Card>
-          </div>
-        )}
-        {tab==="users"&&(
-          <div className="fade">
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"22px"}}>
-              <div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>المشتركون</div><div style={{color:T.tx2,fontSize:"13px"}}>{filtered.length} من {users.length}</div></div>
-              <Btn small variant="outline" onClick={load}>↻ تحديث</Btn>
-            </div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr auto",gap:"12px",marginBottom:"18px"}}>
-              <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="بحث..." style={{...IS,padding:"10px 14px"}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
-              <select value={filterPlan} onChange={e=>setFilterPlan(e.target.value)} style={{...IS,width:"auto",minWidth:"150px",cursor:"pointer",appearance:"none"}}>
-                <option value="">كل الباقات</option><option value="free">مجانية</option><option value="pro">مدفوعة</option><option value="pro2">احترافية</option><option value="beta">تجربة مبكرة</option>
-              </select>
-            </div>
-            {loading?<Spin/>:(
-              <Card style={{padding:"0",overflow:"hidden"}}>
-                <div style={{overflowX:"auto"}}>
-                  <table style={{width:"100%",borderCollapse:"collapse",fontSize:"12px"}}>
-                    <thead><tr style={{background:T.sur,borderBottom:`1px solid ${T.brd}`}}>{["الاسم","البريد","البودكاست","الباقة","استخدام","كريديت","beta","ملاحظات","إجراء"].map(h=>(<th key={h} style={{padding:"12px 14px",color:T.tx2,textAlign:"right",fontWeight:"600",whiteSpace:"nowrap"}}>{h}</th>))}</tr></thead>
-                    <tbody>{filtered.map(u=>{const d=betaDays(u);return(<tr key={u.user_id} style={{borderBottom:`1px solid ${T.brd}`,transition:"background 0.15s"}} onMouseEnter={e=>e.currentTarget.style.background=T.sur} onMouseLeave={e=>e.currentTarget.style.background="transparent"}>
-                      <td style={{padding:"11px 14px",color:T.tx,whiteSpace:"nowrap"}}>{u.profile.first_name||"—"} {u.profile.last_name||""}</td>
-                      <td style={{padding:"11px 14px",color:T.tx2,direction:"ltr",textAlign:"left",fontSize:"11px"}}>{u.profile.email||u.user_id.slice(0,12)+"..."}</td>
-                      <td style={{padding:"11px 14px",color:T.tx2,maxWidth:"110px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.profile.podcast_name||"—"}</td>
-                      <td style={{padding:"11px 14px"}}><PlanBadge plan={u.plan} betaExpires={u.beta_expires_at}/></td>
-                      <td style={{padding:"11px 14px",color:T.tx2,textAlign:"center"}}>{u.episodes_used||0}</td>
-                      <td style={{padding:"11px 14px",color:T.acc,textAlign:"center",fontWeight:"700"}}>{u.credits||0}</td>
-                      <td style={{padding:"11px 14px",textAlign:"center"}}>{d!==null?<span style={{color:d<3?T.err:d<7?T.warn:T.ok,fontSize:"11px",fontWeight:"700"}}>{d>0?d+" يوم":"منتهية"}</span>:"—"}</td>
-                      <td style={{padding:"11px 14px",color:T.tx2,maxWidth:"100px",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{u.notes||"—"}</td>
-                      <td style={{padding:"11px 14px"}}><div style={{display:"flex",gap:"6px"}}><Btn small variant="outline" onClick={()=>openEdit(u)}>✏️</Btn><Btn small variant="outline" color={T.err} onClick={()=>deleteUser(u)}>🗑</Btn></div></td>
-                    </tr>);})}
-                    </tbody>
-                  </table>
-                </div>
-              </Card>
-            )}
-          </div>
-        )}
-        {tab==="export"&&(
-          <div className="fade">
-            <div style={{marginBottom:"28px"}}><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>تصدير البيانات</div><div style={{color:T.tx2,fontSize:"13px"}}>تصدير وإحصاءات المشتركين</div></div>
-            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"20px",marginBottom:"20px"}}>
-              <Card><div style={{fontSize:"28px",marginBottom:"10px"}}>📊</div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>تصدير كل المشتركين</div><div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>ملف CSV يشمل كل البيانات.</div><Btn variant="fill" onClick={()=>exportCSV("all")}>⬇ تصدير CSV</Btn></Card>
-              <Card><div style={{fontSize:"28px",marginBottom:"10px"}}>📧</div><div style={{fontSize:"15px",fontWeight:"700",color:T.tx,marginBottom:"8px"}}>قائمة العروض</div><div style={{fontSize:"13px",color:T.tx2,marginBottom:"20px",lineHeight:"1.7"}}>من وافقوا على استقبال العروض فقط.</div><Btn variant="fill" onClick={()=>exportCSV("offers")}>⬇ تصدير قائمة العروض</Btn></Card>
-            </div>
-            <Card><div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>📋 ملخص إحصائي</div>
-              <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"14px"}}>
-                {[{l:"إجمالي",v:stats.total},{l:"مجانية",v:stats.free},{l:"مدفوعة",v:stats.pro},{l:"تجربة مبكرة",v:stats.beta},{l:"وافقوا على العروض",v:users.filter(u=>u.profile.accept_offers).length},{l:"لديهم بودكاست",v:users.filter(u=>u.profile.podcast_name).length},{l:"حلقات مولّدة",v:stats.episodes},{l:"كريديت متبقٍ",v:stats.credits}].map(s=>(<div key={s.l} style={{background:T.bg,borderRadius:"8px",padding:"14px",border:`1px solid ${T.brd}`}}><div style={{fontSize:"24px",fontWeight:"800",color:T.acc,marginBottom:"4px"}}>{s.v}</div><div style={{fontSize:"11px",color:T.tx2}}>{s.l}</div></div>))}
-              </div>
-            </Card>
-          </div>
-        )}
-        {tab==="messages"&&<MessagesTab/>}
-        {tab==="email"&&<EmailTab/>}
-        {tab==="settings"&&<SettingsTab/>}
-        <EditModal/>
+      <nav style={{flex:1,display:"flex",flexDirection:"column",gap:"4px"}}>
+        {TABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{background:tab===t.id?T.accL:"transparent",border:`1px solid ${tab===t.id?T.acc:T.brd}`,borderRadius:"8px",padding:"11px 14px",cursor:"pointer",color:tab===t.id?T.acc:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"600",fontSize:"13px",textAlign:"right",display:"flex",alignItems:"center",gap:"8px",transition:"all 0.2s"}}><span>{t.ic}</span>{t.l}</button>))}
+      </nav>
+      <div style={{borderTop:`1px solid ${T.brd}`,paddingTop:"16px",display:"flex",flexDirection:"column",gap:"8px"}}>
+        <a href="/app" style={{display:"block",padding:"10px 14px",borderRadius:"8px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"12px",textAlign:"center",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>← العودة للأداة</a>
+        <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"10px 14px",borderRadius:"8px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"12px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>تسجيل الخروج</button>
       </div>
     </div>
-  );
+    <div style={{marginRight:"230px",padding:"32px",flex:1,minWidth:0}}>
+      {msg.text&&<Alrt text={msg.text} type={msg.type}/>}
+      {tabContent[tab]}
+      <EditModal/>
+    </div>
+  </div>);
 };
 
 const App=()=>{
@@ -614,7 +419,6 @@ const App=()=>{
   if(!user)return <Login onLogin={setUser}/>;
   return <Dashboard user={user} onLogout={()=>setUser(null)}/>;
 };
-
 ReactDOM.render(<App/>, document.getElementById("root"));
 </script>
 </body>
