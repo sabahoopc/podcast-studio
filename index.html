@@ -834,7 +834,60 @@ const AdminScreen = ({onBack}) => {
 };
 
 // ── App ────────────────────────────────────────────────────────────────────
-const FeedbackButton = ({user}) => {
+const HelpButton = () => {
+  const [open, setOpen] = useState(false);
+  const steps = [
+    { ic:"◎", t:"أنشئ حلقتك", d:"اختر نوع البودكاست (فردي، جماعي، أو حواري) وأدخل اسم البودكاست وموضوع الحلقة." },
+    { ic:"✦", t:"ولّد السكريبت", d:"اضغط توليد المحتوى وسيكتب الذكاء الاصطناعي سكريبتاً كاملاً جاهزاً للتسجيل." },
+    { ic:"◉", t:"نصائح الإنتاج", d:"اختر نوع استوديوك (صوتي أو مرئي) واحصل على توصيات مخصصة للميكروفون والإضاءة والتحرير." },
+    { ic:"◐", t:"التسويق والنشر", d:"ولّد وصف الحلقة ومنشورات السوشيال والنشرة البريدية وعناوين بديلة — كلها جاهزة للنسخ." },
+    { ic:"✦", t:"ملف أسلوبك الشخصي", d:"اضغط زر ✦ أسلوبي في الأعلى وأضف مقطعاً من حلقة سابقة — ستكتب الأداة بأسلوبك تلقائياً." },
+    { ic:"▦", t:"حلقاتي", d:"كل حلقاتك محفوظة في تبويب حلقاتي — يمكن تحميلها أو تنزيلها كملف متكامل." },
+  ];
+  return (
+    <>
+      <button onClick={() => setOpen(true)} style={{
+        position:"fixed", bottom:"24px", right:"24px", zIndex:999,
+        background:T.sur, color:T.tx2, border:`1px solid ${T.brd2}`,
+        borderRadius:"50px", padding:"12px 20px",
+        fontFamily:"'Noto Kufi Arabic',sans-serif", fontWeight:"700",
+        fontSize:"13px", cursor:"pointer",
+        boxShadow:"0 4px 20px rgba(0,0,0,0.3)",
+        display:"flex", alignItems:"center", gap:"8px",
+      }}>
+        ؟ مساعدة
+      </button>
+      {open && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.8)", backdropFilter:"blur(4px)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:9997, padding:"16px" }}>
+          <div style={{ background:T.sur, border:`1px solid ${T.brd2}`, borderRadius:"16px", width:"100%", maxWidth:"500px", maxHeight:"88vh", overflowY:"auto", padding:"28px" }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"24px" }}>
+              <div>
+                <div style={{ fontSize:"17px", fontWeight:"700", color:T.tx }}>؟ كيف تستخدم الأداة</div>
+                <div style={{ color:T.tx2, fontSize:"12px", marginTop:"3px" }}>دليل سريع من الفكرة إلى النشر</div>
+              </div>
+              <button onClick={() => setOpen(false)} style={{ background:"none", border:"none", color:T.tx2, fontSize:"20px", cursor:"pointer" }}>✕</button>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:"14px" }}>
+              {steps.map((s,i) => (
+                <div key={i} style={{ display:"flex", gap:"14px", alignItems:"flex-start", padding:"14px", background:T.car, borderRadius:"10px", border:`1px solid ${T.brd}` }}>
+                  <div style={{ width:"36px", height:"36px", borderRadius:"50%", background:T.accL, border:`1px solid ${T.acc}40`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"16px", flexShrink:0, color:T.acc, fontWeight:"700" }}>{i+1}</div>
+                  <div>
+                    <div style={{ fontSize:"14px", fontWeight:"700", color:T.tx, marginBottom:"4px" }}>{s.ic} {s.t}</div>
+                    <div style={{ fontSize:"12px", color:T.tx2, lineHeight:"1.7" }}>{s.d}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:"20px", textAlign:"center" }}>
+              <button onClick={() => setOpen(false)} style={{ background:T.acc, color:"#0d0d14", border:"none", borderRadius:"8px", padding:"11px 28px", fontFamily:"'Noto Kufi Arabic',sans-serif", fontWeight:"700", fontSize:"14px", cursor:"pointer" }}>فهمت، لنبدأ! ←</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+ const FeedbackButton = ({user}) => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -1015,7 +1068,8 @@ setUsage(u||null);
       </div>
 
       <div style={{color:T.tx3,fontSize:"10px",marginTop:"20px",textAlign:"center"}}>المحتوى المولد للاسترشاد والتعديل قبل النشر</div>
-      <FeedbackButton user={user}/>
+     <HelpButton/>
+     <FeedbackButton user={user}/>
     </div>
   );
 };
