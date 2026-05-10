@@ -847,7 +847,6 @@ const FeedbackButton = ({user}) => {
   useEffect(() => {
     if (user) {
       setEmail(user.email || "");
-      if (profile?.first_name) setName(profile.first_name + " " + (profile.last_name || ""));
     }
   }, [user]);
 
