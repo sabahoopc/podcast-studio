@@ -276,14 +276,25 @@ const SHEETS_URL="https://script.google.com/macros/s/AKfycbw3XCJgd5pdzLY9Sz53HEd
         <div>
           <Card style={{marginBottom:"16px"}}>
            <Field label="الجمهور المستهدف">
-  <select value={audience} onChange={e=>setAudience(e.target.value)} style={{...IS,cursor:"pointer",appearance:"auto",color:"#000000",background:"#ffffff",colorScheme:"light"}}>
-    <option value="all">الكل ({users.filter(u=>u.profile.email).length})</option>
-    <option value="free">مجانية ({users.filter(u=>u.plan==="free"&&u.profile.email).length})</option>
-    <option value="pro">مدفوعة ({users.filter(u=>u.plan==="pro"&&u.profile.email).length})</option>
-    <option value="pro2">احترافية ({users.filter(u=>u.plan==="pro2"&&u.profile.email).length})</option>
-    <option value="beta">تجربة مبكرة ({users.filter(u=>u.plan==="beta"&&u.profile.email).length})</option>
-    <option value="offers">وافقوا ({users.filter(u=>u.profile.accept_offers&&u.profile.email).length})</option>
-  </select>
+  <div style={{display:"flex",flexWrap:"wrap",gap:"8px"}}>
+    {[
+      {v:"all",l:`الكل (${users.filter(u=>u.profile.email).length})`},
+      {v:"free",l:`مجانية (${users.filter(u=>u.plan==="free"&&u.profile.email).length})`},
+      {v:"pro",l:`مدفوعة (${users.filter(u=>u.plan==="pro"&&u.profile.email).length})`},
+      {v:"pro2",l:`احترافية (${users.filter(u=>u.plan==="pro2"&&u.profile.email).length})`},
+      {v:"beta",l:`تجربة مبكرة (${users.filter(u=>u.plan==="beta"&&u.profile.email).length})`},
+      {v:"offers",l:`وافقوا على العروض (${users.filter(u=>u.profile.accept_offers&&u.profile.email).length})`},
+    ].map(o=>(
+      <button key={o.v} onClick={()=>setAudience(o.v)} style={{
+        padding:"8px 14px",borderRadius:"8px",cursor:"pointer",fontSize:"12px",fontWeight:"600",
+        fontFamily:"'Noto Kufi Arabic',sans-serif",
+        background:audience===o.v?T.accL:"transparent",
+        border:`1px solid ${audience===o.v?T.acc:T.brd2}`,
+        color:audience===o.v?T.acc:T.tx2,
+        transition:"all 0.2s",
+      }}>{o.l}</button>
+    ))}
+  </div>
 </Field>
             <div style={{padding:"10px 14px",borderRadius:"8px",background:T.bg,border:`1px solid ${T.brd}`,fontSize:"12px",color:T.tx2,marginBottom:"16px"}}>
               سيُرسَل لـ <strong style={{color:T.acc}}>{recipients.length} مستخدم</strong>
