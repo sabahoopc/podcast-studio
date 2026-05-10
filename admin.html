@@ -164,10 +164,10 @@ const Dashboard=({user,onLogout})=>{
     for(const u of recipients){
       const name=u.profile.first_name||"عزيزي المستخدم";
       try{
-        await fetch("https://api.resend.com/emails",{
+        await fetch("https://podcast-api.sabahoo-pc.workers.dev/send-email",{
           method:"POST",
-          headers:{"Authorization":`Bearer ${RESEND_KEY}`,"Content-Type":"application/json"},
-          body:JSON.stringify({from:"استوديو البودكاست <hello@mypcstudio.com>",to:u.profile.email,subject:emailSubject,html:buildEmailHTML(name,emailBody)}),
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({resendKey:RESEND_KEY,from:"استوديو البودكاست <hello@mypcstudio.com>",to:u.profile.email,subject:emailSubject,html:buildEmailHTML(name,emailBody)}),
         });
         sent++;
       }catch{}
