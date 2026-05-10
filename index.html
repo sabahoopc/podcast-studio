@@ -605,7 +605,7 @@ const MarketingScreen = ({episode,onNav,usage}) => {
   const gen=async t=>{
     if(!episode)return;setBusy(t);
     const base=`البودكاست: "${episode.name}" | النوع: ${TYPES[episode.type]?.label}\nالموضوع: ${episode.topic}\n${link?"رابط الحلقة: "+link:""}\n\n`;
-    const prompts={description:base+"اكتب وصفاً احترافياً للحلقة لـ Spotify وAnghami:\n- ٣–٥ فقرات\n- جملة تشويقية قوية\n- ما سيستفيده المستمع\n- كلمات مفتاحية\n- دعوة للاشتراك",social:base+"اكتب محتوى السوشيال:\n١. تغريدة X (أقل من 280 حرف)\n٢. منشور انستقرام مع هاشتاقات\n٣. منشور لينكدإن\n٤. اقتباس للتصميم الجرافيكي",email:base+"اكتب نشرة بريدية:\n- سطر موضوع جذاب\n- مقدمة ترحيب\n- ملخص ٣ نقاط\n- أبرز اقتباس\n- رابط للاستماع\n- خاتمة ودية",titles:base+"اقترح ١٠ عناوين بديلة:\n- ٣ تثير الفضول\n- ٣ تركز على الفائدة\n- ٢ تستخدم الأرقام\n- ٢ قصيرة ومباشرة\nلكل عنوان: سبب اختياره."};
+    const prompts={description:base+"اكتب وصفاً احترافياً للحلقة لـ Spotify وAnghami:\n- ٣–٥ فقرات\n- جملة تشويقية قوية\n- ما سيستفيده المستمع\n- كلمات مفتاحية\n- دعوة للاشتراك",social:base+"اكتب محتوى السوشيال:\n١. تغريدة X (أقل من 280 حرف)\n٢. منشور انستقرام مع هاشتاقات\n٣. منشور لينكدإن\n٤. اقتباس للتصميم الجرافيكي",email:base+"اكتب نشرة بريدية:\n- سطر موضوع جذاب\n- مقدمة ترحيب\n- ملخص ٣ نقاط\n- أبرز اقتباس\n- رابط للاستماع\n- خاتمة ودية",titles:base+"اقترح ١٠ عناوين بديلة:\n- ٣ تثير الفضول\n- ٣ تركز على الفائدة\n- ٢ تستخدم الأرقام\n- ٢ قصيرة ومباشرة\nلكل عنوان: سبب اختياره.",reels:base+"اقترح ١٠ أفكار لمقاطع Reels وTikTok مستوحاة من هذه الحلقة:\n- لكل فكرة: العنوان الجذاب + الهوك الأول (أول 3 ثوانٍ) + مدة المقطع المقترحة + الرسالة الرئيسية\n- تنوع بين: مقاطع تعليمية، اقتباسات مؤثرة، لقطات كواليس، أسئلة للجمهور\n- هوك قوي + قيمة سريعة + call to action"};
     try{const text=await callAI("أنت خبير تسويق بودكاست عربي. ردودك بالعربية.",prompts[t]);setOuts(o=>({...o,[t]:text}));}catch(e){setOuts(o=>({...o,[t]:"خطأ: "+e.message}));}
     setBusy("");
   };
@@ -622,7 +622,16 @@ const MarketingScreen = ({episode,onNav,usage}) => {
       <div style={{display:"flex",gap:"3px",background:T.bg,border:`1px solid ${T.brd}`,borderRadius:"8px",padding:"3px",marginBottom:"16px"}}>
         {MTABS.map(t=>(<button key={t.id} onClick={()=>setTab(t.id)} style={{flex:1,background:tab===t.id?T.sur:"transparent",border:tab===t.id?`1px solid ${T.brd}`:"1px solid transparent",borderRadius:"6px",padding:"8px 4px",color:tab===t.id?T.tx:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"600",fontSize:"11px",cursor:"pointer",whiteSpace:"nowrap"}}>{t.l}</button>))}
       </div>
-      <Btn variant="fill" full disabled={!episode||!!busy} onClick={()=>gen(tab)}>{busy===tab?"جارٍ التوليد...":"توليد "+MTABS.find(t=>t.id===tab)?.l}</Btn>
+      {tab==="reels"&&usage?.plan!=="pro2"?(
+  <div style={{padding:"20px",borderRadius:"10px",background:T.car,border:`1px solid ${T.brd}`,textAlign:"center"}}>
+    <div style={{fontSize:"20px",marginBottom:"8px"}}>⭐</div>
+    <div style={{fontWeight:"700",color:T.tx,marginBottom:"6px",fontSize:"14px"}}>هذه الميزة للباقة الاحترافية فقط</div>
+    <div style={{color:T.tx2,fontSize:"12px",marginBottom:"16px"}}>احصل على أفكار Reels وTikTok مخصصة لحلقتك بـ 13$/شهر</div>
+    <a href="https://podcaststudio.gumroad.com/l/social" target="_blank" style={{display:"inline-block",background:T.acc,color:"#0d0d14",fontWeight:"700",fontSize:"13px",padding:"10px 22px",borderRadius:"8px",textDecoration:"none"}}>ترقية للاحترافية ←</a>
+  </div>
+):(
+  <Btn variant="fill" full disabled={!episode||!!busy} onClick={()=>gen(tab)}>{busy===tab?"جارٍ التوليد...":"توليد "+MTABS.find(t=>t.id===tab)?.l}</Btn>
+)}
       {busy===tab&&<Spinner/>}
       {outs[tab]&&busy!==tab&&(<div style={{marginTop:"16px"}}><div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}><div style={{fontSize:"11px",letterSpacing:"0.12em",color:T.tx2,textTransform:"uppercase"}}>{MTABS.find(t=>t.id===tab)?.l}</div><CopyBtn text={outs[tab]}/></div><OutputBox text={outs[tab]}/></div>)}
       <div style={{marginTop:"22px",borderTop:`1px solid ${T.brd}`,paddingTop:"18px"}}>
