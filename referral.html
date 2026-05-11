@@ -71,6 +71,9 @@ const Dashboard=({user,onLogout})=>{
   const[earnings,setEarnings]=useState([]);
   const[loading,setLoading]=useState(true);
   const[paypalEmail,setPaypalEmail]=useState("");
+const[bankName,setBankName]=useState("");
+const[bankIban,setBankIban]=useState("");
+const[bankHolder,setBankHolder]=useState("");
   const[savingPaypal,setSavingPaypal]=useState(false);
   const[copied,setCopied]=useState(false);
   const[msg,setMsg]=useState({text:"",type:"ok"});
@@ -83,6 +86,9 @@ const Dashboard=({user,onLogout})=>{
       const{data:p}=await sb.from("profiles").select("*").eq("id",user.id).single();
       setProfile(p);
       setPaypalEmail(p?.paypal_email||"");
+setBankName(p?.bank_name||"");
+setBankIban(p?.bank_iban||"");
+setBankHolder(p?.bank_holder||"");
 
       const{data:refs}=await sb.from("referrals").select("*").eq("referrer_id",user.id);
       setReferrals(refs||[]);
