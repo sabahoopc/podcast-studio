@@ -1104,6 +1104,16 @@ const OnboardingTour = ({onDone}) => {
   const loadProfile = async (userId) => {
     const{data}=await sb.from("profiles").select("*").eq("id",userId).single();
     setProfile(data||null);
+   // حفظ ref code إذا جاء من رابط
+const urlParams = new URLSearchParams(window.location.search);
+const refCode = urlParams.get("ref");
+if (refCode && data && !data.referred_by) {
+  const{data:referrer}=await sb.from("profiles").select("id").eq("ref_code",refCode).single();
+  if (referrer && referrer.id !== userId) {
+    await sb.from("profiles").update({referred_by:refCode}).eq("id",userId);
+    await sb.from("referrals").insert({referrer_id:referrer.id,referred_id:userId});
+  }
+}
    if (!localStorage.getItem(ONBOARDING_KEY)) { setTimeout(() => setShowTour(true), 1000); }
    if (!localStorage.getItem(ONBOARDING_KEY)) {
   setTimeout(() => setShowTour(true), 1000);
@@ -1143,6 +1153,10 @@ setUsage(u||null);
               <div style={{fontSize:"17px",marginBottom:"2px"}}>✦</div><div>أسلوبي</div>
               <div style={{fontSize:"9px",marginTop:"2px",opacity:0.7}}>{hasStyle?"مفعّل":"غير مُعدّ"}</div>
             </button>
+           <button onClick={()=>{ const link=`https://www.mypcstudio.com?ref=${profile?.ref_code}`; navigator.clipboard.writeText(link); alert("✓ تم نسخ رابطك الخاص!"); }} style={{background:T.sur,border:`1px solid ${T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}>
+  <div style={{fontSize:"17px",marginBottom:"2px"}}>🔗</div>
+  <div>رابطي</div>
+</button>
             <button onClick={signOut} style={{background:T.sur,border:`1px solid ${T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}>
               <div style={{fontSize:"17px",marginBottom:"2px"}}>→</div><div>خروج</div>
             </button>
