@@ -73,6 +73,8 @@ const Dashboard=({user,onLogout})=>{
   const[saving,setSaving]=useState(false);
   const[maintenance,setMaintenance]=useState(false);
   const[maintenanceBusy,setMaintenanceBusy]=useState(false);
+  const[referralData,setReferralData]=useState([]);
+const[referralLoading,setReferralLoading]=useState(false);
   const[messages,setMessages]=useState([]);
   const[msgsLoading,setMsgsLoading]=useState(false);
   const[emailSubject,setEmailSubject]=useState("");
@@ -82,7 +84,7 @@ const Dashboard=({user,onLogout})=>{
   const[emailSending,setEmailSending]=useState(false);
   const[emailResult,setEmailResult]=useState({text:"",type:"ok"});
 
-  useEffect(()=>{load();loadSettings();loadMessages();},[]);
+  useEffect(()=>{load();loadSettings();loadMessages();loadReferrals();},[]);
 
   const load=async()=>{
     setLoading(true);
@@ -100,6 +102,28 @@ const Dashboard=({user,onLogout})=>{
   };
 
   const loadSettings=async()=>{const{data}=await sb.from("settings").select("*").eq("key","maintenance").single();if(data)setMaintenance(data.value==="true");};
+  const loadReferrals=async()=>{
+  setReferralLoading(true);
+  try{
+    const{data:refs}=await sb.from("referrals").select("*");
+    const{data:earnings}=await sb.from("referral_earnings").select("*");
+    const{data:profs}=await sb.from("profiles").select("id,first_name,last_name,email,ref_code,paypal_email");
+    const profMap={};(profs||[]).forEach(p=>{profMap[p.id]=p;});
+    const summary={};
+    (refs||[]).forEach(r=>{
+      const id=r.referrer_id;
+      if(!summary[id])summary[id]={profile:profMap[id]||{},count:0,paid:0,pending:0};
+      summary[id].count++;
+    });
+    (earnings||[]).forEach(e=>{
+      if(!summary[e.referrer_id])summary[e.referrer_id]={profile:profMap[e.referrer_id]||{},count:0,paid:0,pending:0};
+      if(e.status==="paid")summary[e.referrer_id].paid+=parseFloat(e.amount||0);
+      else summary[e.referrer_id].pending+=parseFloat(e.amount||0);
+    });
+    setReferralData(Object.entries(summary).map(([id,v])=>({id,...v})));
+  }catch(e){flash("خطأ في تحميل الريفيريل","error");}
+  setReferralLoading(false);
+};
   const loadMessages=async()=>{setMsgsLoading(true);try{const r=await fetch(SHEETS_URL);const data=await r.json();setMessages(data||[]);}catch{}setMsgsLoading(false);};
   const toggleMaintenance=async()=>{setMaintenanceBusy(true);const nv=!maintenance;await sb.from("settings").update({value:nv?"true":"false",updated_at:new Date().toISOString()}).eq("key","maintenance");setMaintenance(nv);flash(nv?"✓ وضع الصيانة مفعّل":"✓ الموقع يعمل بشكل طبيعي","ok");setMaintenanceBusy(false);};
   const flash=(text,type="ok")=>{setMsg({text,type});setTimeout(()=>setMsg({text:"",type:"ok"}),3000);};
@@ -182,7 +206,7 @@ const Dashboard=({user,onLogout})=>{
   });
   const betaDays=u=>{if(u.plan!=="beta"||!u.beta_expires_at)return null;return Math.ceil((new Date(u.beta_expires_at)-new Date())/(864e5));};
   const StatCard=({ic,l,v,c})=>(<Card style={{padding:"18px"}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:"8px"}}><span style={{fontSize:"22px"}}>{ic}</span><span style={{fontSize:"26px",fontWeight:"800",color:c||T.acc}}>{v}</span></div><div style={{fontSize:"12px",color:T.tx2}}>{l}</div></Card>);
-  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"email",l:"إرسال إيميل",ic:"📧"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
+  const TABS=[{id:"overview",l:"نظرة عامة",ic:"📊"},{id:"users",l:"المشتركون",ic:"👥"},{id:"referrals",l:"الريفيريل",ic:"🔗"},{id:"messages",l:"الرسائل",ic:"💬"},{id:"email",l:"إرسال إيميل",ic:"📧"},{id:"export",l:"تصدير",ic:"📤"},{id:"settings",l:"الإعدادات",ic:"⚙️"}];
 
   const emailRecipients=getEmailRecipients();
   const audienceOptions=[
@@ -370,6 +394,52 @@ const Dashboard=({user,onLogout})=>{
   const tabContent={
   overview:<OverviewTab/>,
   users:<UsersTab/>,
+  referrals:(
+    <div className="fade">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"24px"}}>
+        <div><div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>🔗 نظام الريفيريل</div><div style={{color:T.tx2,fontSize:"13px"}}>{referralData.length} مسوّق</div></div>
+        <Btn small variant="outline" onClick={loadReferrals}>↻ تحديث</Btn>
+      </div>
+      {referralLoading?<Spin/>:referralData.length===0?(<Card style={{textAlign:"center",padding:"40px"}}><div style={{fontSize:"28px",marginBottom:"10px"}}>🔗</div><div style={{color:T.tx2,fontSize:"14px"}}>لا يوجد مسوّقون بعد</div></Card>):(
+        <div style={{display:"flex",flexDirection:"column",gap:"12px"}}>
+          {referralData.map(r=>(<Card key={r.id} style={{padding:"18px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}}>
+              <div>
+                <div style={{fontWeight:"700",color:T.tx,fontSize:"14px",marginBottom:"3px"}}>{r.profile.first_name||"—"} {r.profile.last_name||""}</div>
+                <div style={{color:T.tx2,fontSize:"11px",direction:"ltr",textAlign:"right"}}>{r.profile.email||"—"}</div>
+                {r.profile.paypal_email&&<div style={{color:T.acc,fontSize:"11px",marginTop:"2px"}}>PayPal: {r.profile.paypal_email}</div>}
+              </div>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontSize:"22px",fontWeight:"800",color:T.acc}}>{r.count}</div>
+                <div style={{fontSize:"10px",color:T.tx2}}>مشترك جلبه</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:"12px",marginBottom:"12px"}}>
+              <div style={{background:T.bg,borderRadius:"8px",padding:"10px 14px",border:`1px solid ${T.brd}`,flex:1,textAlign:"center"}}>
+                <div style={{fontSize:"16px",fontWeight:"700",color:T.ok}}>{r.pending.toFixed(2)}$</div>
+                <div style={{fontSize:"10px",color:T.tx2}}>معلّق</div>
+              </div>
+              <div style={{background:T.bg,borderRadius:"8px",padding:"10px 14px",border:`1px solid ${T.brd}`,flex:1,textAlign:"center"}}>
+                <div style={{fontSize:"16px",fontWeight:"700",color:T.tx2}}>{r.paid.toFixed(2)}$</div>
+                <div style={{fontSize:"10px",color:T.tx2}}>مدفوع</div>
+              </div>
+            </div>
+            <div style={{display:"flex",gap:"8px"}}>
+              <Btn small variant="fill" onClick={async()=>{
+                const amount=(r.count*2).toFixed(2);
+                await sb.from("referral_earnings").insert({referrer_id:r.id,amount,status:"pending",month:new Date().toISOString().slice(0,7)});
+                flash("✓ تم إضافة العمولة","ok");loadReferrals();
+              }}>+ إضافة عمولة شهرية</Btn>
+              <Btn small variant="outline" color={T.ok} onClick={async()=>{
+                await sb.from("referral_earnings").update({status:"paid",paid_at:new Date().toISOString()}).eq("referrer_id",r.id).eq("status","pending");
+                flash("✓ تم تسجيل الدفع","ok");loadReferrals();
+              }}>✓ تسجيل دفع</Btn>
+            </div>
+          </Card>))}
+        </div>
+      )}
+    </div>
+  ),
   messages:<MessagesTab/>,
   email:(
     <div className="fade">
