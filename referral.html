@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>برنامج الشراكة — استوديو البودكاست</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html,body{background:#0d0d14!important;min-height:100vh;}
+body{font-family:'Noto Kufi Arabic',sans-serif;direction:rtl;color:#e2ddd4;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:#2a2a3e;border-radius:4px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+.fade{animation:fadeIn 0.3s ease forwards;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="text/babel">
+const {useState,useEffect}=React;
+const SB_URL="https://qawyirrrprjcklwxgzqu.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFhd3lpcnJycHJqY2tsd3hnenF1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzgxNDMxNDEsImV4cCI6MjA5MzcxOTE0MX0.y7TJ0WPiYXa5JwphGuYdj8O8B_D7eZz8Fo53H27j7O8";
+const sb=supabase.createClient(SB_URL,SB_KEY);
+
+const T={bg:"#0d0d14",sur:"#13131e",car:"#1a1a28",brd:"#252535",brd2:"#2e2e42",acc:"#c8a050",accL:"rgba(200,160,80,0.12)",tx:"#e2ddd4",tx2:"#8a8599",tx3:"#4a4860",ok:"#3d9e6f",warn:"#c8a050",err:"#c05040"};
+const IS={width:"100%",background:T.bg,border:`1px solid ${T.brd}`,borderRadius:"8px",padding:"11px 14px",color:T.tx,fontFamily:"'Noto Kufi Arabic',sans-serif",fontSize:"14px",direction:"rtl",outline:"none",boxSizing:"border-box"};
+
+const Spin=()=>(<div style={{textAlign:"center",padding:"48px"}}><div style={{width:"32px",height:"32px",border:`2px solid ${T.brd2}`,borderTop:`2px solid ${T.acc}`,borderRadius:"50%",animation:"spin 0.8s linear infinite",margin:"0 auto 12px"}}/><div style={{color:T.tx2,fontSize:"13px"}}>جارٍ التحميل...</div></div>);
+const Card=({children,style={}})=>(<div style={{background:T.car,border:`1px solid ${T.brd}`,borderRadius:"12px",padding:"20px",...style}}>{children}</div>);
+const Alrt=({text,type="error"})=>{const c=type==="ok"?T.ok:type==="warn"?T.warn:T.err;return <div style={{padding:"10px 14px",borderRadius:"8px",fontSize:"13px",marginBottom:"14px",background:c+"20",border:`1px solid ${c}40`,color:type==="ok"?T.ok:type==="warn"?"#e8c070":"#e07060"}}>{text}</div>;};
+
+const LoginScreen=({onLogin})=>{
+  const[email,setEmail]=useState("");const[pw,setPw]=useState("");const[busy,setBusy]=useState(false);const[err,setErr]=useState("");
+  const go=async()=>{setBusy(true);setErr("");try{const{data,error}=await sb.auth.signInWithPassword({email,password:pw});if(error)throw new Error(error.message);onLogin(data.user);}catch(e){setErr(e.message==="Invalid login credentials"?"البريد أو كلمة المرور غير صحيحة":e.message);}setBusy(false);};
+  return(<div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px",background:T.bg}}>
+    <div style={{width:"100%",maxWidth:"380px"}} className="fade">
+      <div style={{textAlign:"center",marginBottom:"32px"}}>
+        <div style={{fontSize:"32px",marginBottom:"10px"}}>🔗</div>
+        <div style={{fontSize:"22px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>برنامج الشراكة</div>
+        <div style={{color:T.tx2,fontSize:"13px"}}>استوديو البودكاست · سجّل دخول لرؤية أرباحك</div>
+      </div>
+      <Card>
+        {err&&<Alrt text={err}/>}
+        <div style={{marginBottom:"16px"}}>
+          <div style={{fontSize:"11px",color:T.tx2,marginBottom:"7px",letterSpacing:"0.12em",textTransform:"uppercase"}}>البريد الإلكتروني</div>
+          <input type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="بريدك المسجّل في الأداة" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+        </div>
+        <div style={{marginBottom:"20px"}}>
+          <div style={{fontSize:"11px",color:T.tx2,marginBottom:"7px",letterSpacing:"0.12em",textTransform:"uppercase"}}>كلمة المرور</div>
+          <input type="password" value={pw} onChange={e=>setPw(e.target.value)} placeholder="••••••••" style={IS} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+        </div>
+        <button onClick={go} disabled={!email||!pw||busy} style={{width:"100%",background:T.acc,border:"none",borderRadius:"8px",padding:"13px",fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"14px",color:"#0d0d14",cursor:busy?"not-allowed":"pointer",opacity:busy?0.6:1}}>
+          {busy?"جارٍ الدخول...":"دخول"}
+        </button>
+        <div style={{marginTop:"16px",textAlign:"center"}}>
+          <a href="/app" style={{color:T.tx2,fontSize:"12px",textDecoration:"none"}}>ليس لديك حساب؟ سجّل في الأداة أولاً ←</a>
+        </div>
+      </Card>
+    </div>
+  </div>);
+};
+
+const Dashboard=({user,onLogout})=>{
+  const[profile,setProfile]=useState(null);
+  const[referrals,setReferrals]=useState([]);
+  const[earnings,setEarnings]=useState([]);
+  const[loading,setLoading]=useState(true);
+  const[paypalEmail,setPaypalEmail]=useState("");
+  const[savingPaypal,setSavingPaypal]=useState(false);
+  const[copied,setCopied]=useState(false);
+  const[msg,setMsg]=useState({text:"",type:"ok"});
+
+  useEffect(()=>{loadData();},[]);
+
+  const loadData=async()=>{
+    setLoading(true);
+    try{
+      const{data:p}=await sb.from("profiles").select("*").eq("id",user.id).single();
+      setProfile(p);
+      setPaypalEmail(p?.paypal_email||"");
+
+      const{data:refs}=await sb.from("referrals").select("*").eq("referrer_id",user.id);
+      setReferrals(refs||[]);
+
+      const{data:earn}=await sb.from("referral_earnings").select("*").eq("referrer_id",user.id).order("created_at",{ascending:false});
+      setEarnings(earn||[]);
+    }catch(e){}
+    setLoading(false);
+  };
+
+  const refLink=`https://www.mypcstudio.com?ref=${profile?.ref_code||""}`;
+
+  const copyLink=()=>{
+    navigator.clipboard.writeText(refLink);
+    setCopied(true);
+    setTimeout(()=>setCopied(false),2000);
+  };
+
+  const savePaypal=async()=>{
+    setSavingPaypal(true);
+    await sb.from("profiles").update({paypal_email:paypalEmail,updated_at:new Date().toISOString()}).eq("id",user.id);
+    setMsg({text:"✓ تم حفظ بريد PayPal","type":"ok"});
+    setTimeout(()=>setMsg({text:"",type:"ok"}),2000);
+    setSavingPaypal(false);
+  };
+
+  const totalPending=earnings.filter(e=>e.status==="pending").reduce((s,e)=>s+parseFloat(e.amount||0),0);
+  const totalPaid=earnings.filter(e=>e.status==="paid").reduce((s,e)=>s+parseFloat(e.amount||0),0);
+
+  if(loading)return <Spin/>;
+
+  return(
+    <div style={{minHeight:"100vh",background:T.bg}}>
+      {/* Header */}
+      <div style={{background:T.sur,borderBottom:`1px solid ${T.brd}`,padding:"14px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,zIndex:50}}>
+        <div style={{display:"flex",alignItems:"center",gap:"8px"}}>
+          <div style={{width:"6px",height:"6px",borderRadius:"50%",background:T.acc,boxShadow:`0 0 6px ${T.acc}`}}/>
+          <span style={{fontSize:"14px",fontWeight:"700",color:T.tx}}>برنامج الشراكة</span>
+        </div>
+        <div style={{display:"flex",gap:"8px"}}>
+          <a href="/app" style={{padding:"7px 14px",borderRadius:"7px",background:T.car,border:`1px solid ${T.brd}`,color:T.tx2,textDecoration:"none",fontSize:"12px",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>← الأداة</a>
+          <button onClick={async()=>{await sb.auth.signOut();onLogout();}} style={{padding:"7px 14px",borderRadius:"7px",background:"transparent",border:`1px solid ${T.brd}`,color:T.tx2,fontSize:"12px",cursor:"pointer",fontFamily:"'Noto Kufi Arabic',sans-serif"}}>خروج</button>
+        </div>
+      </div>
+
+      <div style={{maxWidth:"680px",margin:"0 auto",padding:"28px 16px"}}>
+        <div className="fade">
+          {msg.text&&<Alrt text={msg.text} type={msg.type}/>}
+
+          {/* Welcome */}
+          <div style={{marginBottom:"28px"}}>
+            <div style={{fontSize:"20px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>مرحباً {profile?.first_name||""}! 👋</div>
+            <div style={{color:T.tx2,fontSize:"13px"}}>تابع أرباحك من برنامج الشراكة</div>
+          </div>
+
+          {/* How it works */}
+          <Card style={{marginBottom:"20px",background:"linear-gradient(135deg,#1a1a28,rgba(200,160,80,0.05))"}}>
+            <div style={{fontSize:"14px",fontWeight:"700",color:T.acc,marginBottom:"14px"}}>🎯 كيف تكسب؟</div>
+            <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"12px"}}>
+              {[{n:"١",t:"شارك رابطك",d:"انسخ رابطك الخاص وشاركه مع البودكاسترز"},
+                {n:"٢",t:"يسجلون ويشتركون",d:"عندما يشتري أي شخص عبر رابطك"},
+                {n:"٣",t:"تحصل على 20%",d:"20% من قيمة كل اشتراك شهري"}
+              ].map(s=>(<div key={s.n} style={{textAlign:"center",padding:"12px 8px",background:T.bg,borderRadius:"10px",border:`1px solid ${T.brd}`}}>
+                <div style={{fontSize:"20px",fontWeight:"800",color:T.acc,marginBottom:"6px"}}>{s.n}</div>
+                <div style={{fontSize:"12px",fontWeight:"700",color:T.tx,marginBottom:"4px"}}>{s.t}</div>
+                <div style={{fontSize:"11px",color:T.tx2,lineHeight:"1.5"}}>{s.d}</div>
+              </div>))}
+            </div>
+          </Card>
+
+          {/* Stats */}
+          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"12px",marginBottom:"20px"}}>
+            <Card style={{padding:"16px",textAlign:"center"}}>
+              <div style={{fontSize:"28px",fontWeight:"800",color:T.acc,marginBottom:"4px"}}>{referrals.length}</div>
+              <div style={{fontSize:"11px",color:T.tx2}}>مشترك جلبته</div>
+            </Card>
+            <Card style={{padding:"16px",textAlign:"center"}}>
+              <div style={{fontSize:"28px",fontWeight:"800",color:T.ok,marginBottom:"4px"}}>{totalPending.toFixed(2)}$</div>
+              <div style={{fontSize:"11px",color:T.tx2}}>أرباح معلّقة</div>
+            </Card>
+            <Card style={{padding:"16px",textAlign:"center"}}>
+              <div style={{fontSize:"28px",fontWeight:"800",color:T.tx2,marginBottom:"4px"}}>{totalPaid.toFixed(2)}$</div>
+              <div style={{fontSize:"11px",color:T.tx2}}>إجمالي مدفوع</div>
+            </Card>
+          </div>
+
+          {/* Referral Link */}
+          <Card style={{marginBottom:"20px"}}>
+            <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>🔗 رابطك الخاص</div>
+            <div style={{color:T.tx2,fontSize:"12px",marginBottom:"14px"}}>شارك هذا الرابط مع أي بودكاستر — كل من يسجل عبره يُحسب لك</div>
+            <div style={{display:"flex",gap:"8px",alignItems:"center"}}>
+              <div style={{flex:1,background:T.bg,border:`1px solid ${T.brd}`,borderRadius:"8px",padding:"11px 14px",fontSize:"13px",color:T.tx2,direction:"ltr",textAlign:"left",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>
+                {refLink}
+              </div>
+              <button onClick={copyLink} style={{background:copied?T.ok:T.acc,border:"none",borderRadius:"8px",padding:"11px 18px",fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"13px",color:"#0d0d14",cursor:"pointer",whiteSpace:"nowrap",transition:"background 0.2s"}}>
+                {copied?"✓ تم النسخ":"نسخ"}
+              </button>
+            </div>
+          </Card>
+
+          {/* Share suggestions */}
+          <Card style={{marginBottom:"20px"}}>
+            <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"14px"}}>💬 اقتراحات للمشاركة</div>
+            {[
+              {ic:"𝕏",l:"تويتر/X",t:`جرّبت أداة رهيبة تكتب سكريبت البودكاست بأسلوبك الشخصي في دقيقتين 🎙️ mypcstudio.com?ref=${profile?.ref_code||""}`},
+              {ic:"📱",l:"واتساب",t:`مرحبا، وجدت أداة ذكية تساعد البودكاسترز على تحضير حلقاتهم بسرعة. جرّبها مجاناً 👇\nmypcstudio.com?ref=${profile?.ref_code||""}`},
+            ].map(s=>(<div key={s.l} style={{marginBottom:"12px",background:T.bg,borderRadius:"8px",padding:"12px",border:`1px solid ${T.brd}`}}>
+              <div style={{fontSize:"12px",color:T.acc,fontWeight:"700",marginBottom:"8px"}}>{s.ic} {s.l}</div>
+              <div style={{fontSize:"12px",color:T.tx2,lineHeight:"1.7",marginBottom:"8px"}}>{s.t}</div>
+              <button onClick={()=>{navigator.clipboard.writeText(s.t);}} style={{background:"transparent",border:`1px solid ${T.brd2}`,borderRadius:"6px",padding:"5px 12px",fontFamily:"'Noto Kufi Arabic',sans-serif",fontSize:"11px",color:T.tx2,cursor:"pointer"}}>نسخ النص</button>
+            </div>))}
+          </Card>
+
+          {/* PayPal */}
+          <Card style={{marginBottom:"20px"}}>
+            <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"6px"}}>💳 بريد PayPal لاستلام الأرباح</div>
+            <div style={{color:T.tx2,fontSize:"12px",marginBottom:"14px"}}>أضف بريد PayPal الخاص بك حتى نتمكن من إرسال أرباحك</div>
+            <div style={{display:"flex",gap:"8px"}}>
+              <input value={paypalEmail} onChange={e=>setPaypalEmail(e.target.value)} placeholder="paypal@email.com" style={{...IS,direction:"ltr",flex:1}} onFocus={e=>e.target.style.borderColor=T.acc} onBlur={e=>e.target.style.borderColor=T.brd}/>
+              <button onClick={savePaypal} disabled={!paypalEmail||savingPaypal} style={{background:T.acc,border:"none",borderRadius:"8px",padding:"11px 18px",fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"13px",color:"#0d0d14",cursor:"pointer",whiteSpace:"nowrap",opacity:!paypalEmail||savingPaypal?0.5:1}}>
+                {savingPaypal?"حفظ...":"حفظ"}
+              </button>
+            </div>
+          </Card>
+
+          {/* Earnings History */}
+          {earnings.length>0&&(<Card>
+            <div style={{fontSize:"14px",fontWeight:"700",color:T.tx,marginBottom:"16px"}}>📊 سجل الأرباح</div>
+            <div style={{display:"flex",flexDirection:"column",gap:"8px"}}>
+              {earnings.map(e=>(<div key={e.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 14px",background:T.bg,borderRadius:"8px",border:`1px solid ${T.brd}`}}>
+                <div>
+                  <div style={{fontSize:"12px",color:T.tx,marginBottom:"2px"}}>{e.month||"—"}</div>
+                  <div style={{fontSize:"11px",color:T.tx2}}>{e.status==="paid"?"✓ مدفوع":"⏳ معلّق"}</div>
+                </div>
+                <div style={{fontSize:"16px",fontWeight:"700",color:e.status==="paid"?T.tx2:T.ok}}>{parseFloat(e.amount||0).toFixed(2)}$</div>
+              </div>))}
+            </div>
+          </Card>)}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const App=()=>{
+  const[user,setUser]=useState(null);const[loading,setLoading]=useState(true);
+  useEffect(()=>{sb.auth.getSession().then(({data})=>{setUser(data.session?.user||null);setLoading(false);});},[]);
+  if(loading)return <div style={{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:T.bg}}><Spin/></div>;
+  if(!user)return <LoginScreen onLogin={setUser}/>;
+  return <Dashboard user={user} onLogout={()=>setUser(null)}/>;
+};
+ReactDOM.render(<App/>, document.getElementById("root"));
+</script>
+</body>
+</html>
