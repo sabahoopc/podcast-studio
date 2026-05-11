@@ -1153,7 +1153,7 @@ setUsage(u||null);
               <div style={{fontSize:"17px",marginBottom:"2px"}}>✦</div><div>أسلوبي</div>
               <div style={{fontSize:"9px",marginTop:"2px",opacity:0.7}}>{hasStyle?"مفعّل":"غير مُعدّ"}</div>
             </button>
-           <button onClick={()=>{ const link=`https://www.mypcstudio.com?ref=${profile?.ref_code}`; navigator.clipboard.writeText(link); alert("✓ تم نسخ رابطك الخاص!"); }} style={{background:T.sur,border:`1px solid ${T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}>
+           <button onClick={()=>window.location.href="/referral"} style={{background:T.sur,border:`1px solid ${T.brd}`,borderRadius:"10px",padding:"9px 13px",cursor:"pointer",color:T.tx2,fontFamily:"'Noto Kufi Arabic',sans-serif",fontWeight:"700",fontSize:"11px",textAlign:"center"}}>
   <div style={{fontSize:"17px",marginBottom:"2px"}}>🔗</div>
   <div>رابطي</div>
 </button>
