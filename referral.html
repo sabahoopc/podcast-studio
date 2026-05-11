@@ -109,8 +109,14 @@ setBankHolder(p?.bank_holder||"");
 
   const savePaypal=async()=>{
     setSavingPaypal(true);
-    await sb.from("profiles").update({paypal_email:paypalEmail,updated_at:new Date().toISOString()}).eq("id",user.id);
-    setMsg({text:"✓ تم حفظ بريد PayPal","type":"ok"});
+    await sb.from("profiles").update({
+      paypal_email:paypalEmail,
+      bank_name:bankName,
+      bank_iban:bankIban,
+      bank_holder:bankHolder,
+      updated_at:new Date().toISOString()
+    }).eq("id",user.id);
+    setMsg({text:"✓ تم حفظ معلومات الدفع","type":"ok"});
     setTimeout(()=>setMsg({text:"",type:"ok"}),2000);
     setSavingPaypal(false);
   };
