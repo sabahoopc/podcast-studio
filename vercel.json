@@ -3,6 +3,7 @@
     { "source": "/admin", "destination": "/admin.html" },
     { "source": "/landing", "destination": "/landing.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
+    { "source": "/referral", "destination": "/referral.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
