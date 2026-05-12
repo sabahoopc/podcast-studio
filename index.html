@@ -1091,7 +1091,14 @@ const OnboardingTour = ({onDone}) => {
     }
   });
 },[]);
- 
+
+  useEffect(()=>{
+  sb.auth.onAuthStateChange((event,session)=>{
+    if(event==="PASSWORD_RECOVERY"){
+      window.location.href="/reset-password";
+    }
+  });
+},[]);
   useEffect(()=>{
     sb.auth.getSession().then(({data})=>{
       const u=data.session?.user||null;
