@@ -54,6 +54,7 @@ const TYPES = {
 };
 const DURS  = ["١٠–٢٠ دقيقة","٢٠–٤٠ دقيقة","٤٠–٦٠ دقيقة","٦٠–٩٠ دقيقة","أكثر من ٩٠ دقيقة"];
 const FREQS = ["يومي","أسبوعي","نصف شهري","شهري","غير منتظم"];
+ const LANGS = ["عربية فصحى","لهجة خليجية","لهجة مصرية","لهجة شامية","لهجة مغربية"];
 
 const T = {
   bg:"#0d0d14", sur:"#13131e", car:"#1a1a28", brd:"#252535", brd2:"#2e2e42",
@@ -415,6 +416,7 @@ const CreateScreen = ({onEpReady,onNav,user}) => {
   const [frequency,setFrequency]=useState("");
   const [topic,setTopic]=useState("");
   const [hostCount,setHostCount]=useState(2);
+ const [lang,setLang]=useState("عربية فصحى");
   const [script,setScript]=useState("");
   const [busy,setBusy]=useState(false);
   const [usage,setUsage]=useState(null);
@@ -427,7 +429,7 @@ const CreateScreen = ({onEpReady,onNav,user}) => {
   const cfg = type?TYPES[type]:{color:T.acc};
 
   const buildPrompt=()=>{
-    const h=`البودكاست: "${name}" | النوع: ${TYPES[type].label} | المدة: ${duration} | النشر: ${frequency}${styleBlock()}\n\n`;
+    const h=`البودكاست: "${name}" | النوع: ${TYPES[type].label} | المدة: ${duration} | النشر: ${frequency} | اللغة: ${lang}${styleBlock()}\n\nمهم: اكتب السكريبت باللغة المحددة (${lang}) بشكل كامل.\n\n`;
     if(type==="solo")return h+`الموضوع: ${topic}\n\nاكتب سكريبت كامل جاهز للتسجيل مباشرةً:\n١- مقدمة جذابة كاملة\n٢- عرض الموضوع بتفصيل مع انتقالات طبيعية\n٣- تعمق في كل نقطة مع أمثلة وقصص\n٤- خاتمة قوية مع call to action\nضع [توقف] عند الانتقالات. الطول يتناسب مع ${duration}.`;
     if(type==="group"){const n=hostCount||2,names=["م١","م٢","م٣","م٤","م٥"].slice(0,n).join("، ");return h+`الموضوع: ${topic}\nعدد المذيعين: ${n}\n\nاكتب سكريبت حوار جماعي كامل موزع على (${names}). كل جملة مكتوبة كاملاً. يشمل مقدمة وحوار متدفق مع نقاط توافق وخلاف وخاتمة. الطول يتناسب مع ${duration}.`;}
     return h+`الضيف/الموضوع: ${topic}\n\nاكتب قائمة أسئلة احترافية:\n١- ٣ أسئلة تمهيدية\n٢- ٦–٨ أسئلة جوهرية متدرجة\n٣- ٣ أسئلة استفزازية\n٤- سؤال ختامي مميز\nلكل سؤال: السؤال كاملاً + هدفه + أسئلة متابعة.`;
@@ -499,6 +501,11 @@ const fullScript = part1.replace("[يتبع...]","").trim()+"\n\n"+part2+(part3.
               </div>
             );})}
           </div>
+         <Field label="لغة السكريبت">
+  <div style={{display:"flex",gap:"8px",flexWrap:"wrap"}}>
+    {LANGS.map(l=>(<div key={l} onClick={()=>setLang(l)} style={{padding:"8px 14px",borderRadius:"8px",cursor:"pointer",fontSize:"12px",fontWeight:"600",background:lang===l?T.accL:"transparent",border:`1px solid ${lang===l?T.acc:T.brd2}`,color:lang===l?T.acc:T.tx2,transition:"all 0.2s"}}>{l}</div>))}
+  </div>
+</Field>
           <div style={{textAlign:"left"}}><Btn variant="fill" disabled={!name||!type} onClick={()=>setStep(1)}>التالي ←</Btn></div>
         </div>
       )}
