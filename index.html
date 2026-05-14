@@ -67,7 +67,7 @@ const gStyle = () => { try { return JSON.parse(localStorage.getItem(SK)) || {}; 
 const gEps   = () => { try { return JSON.parse(localStorage.getItem(EK)) || []; } catch { return []; } };
 const sEp    = ep => { const eps=gEps(),i=eps.findIndex(e=>e.id===ep.id); if(i>=0)eps[i]=ep;else eps.unshift(ep); localStorage.setItem(EK,JSON.stringify(eps)); };
 
-const callAI = async (system, msg, max=3000) => {
+const callAI = async (system, msg, max=4000) => {
   const r = await fetch(WORKER, { method:"POST", headers:{"Content-Type":"application/json"},
     body:JSON.stringify({model:"claude-haiku-4-5-20251001",max_tokens:max,system,messages:[{role:"user",content:msg}]}) });
   if(!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e?.error?.message||"HTTP "+r.status);}
